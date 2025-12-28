@@ -13,6 +13,20 @@ def embed(text):
 def cosine(a, b):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
+qiaoni_logs = [
+    "Qiaoni is a motivated individual who loves to explore new technologies",
+    "Qiaoni has a passion for sharing knowledge with others",
+    "Qiaoni enjoys working on collaborative projects and learning from peers",
+    "Qiaoni consistently takes initiative to solve problems before they escalate",
+    "Qiaoni communicates clearly and adapts well to feedback",
+    "Qiaoni enjoyed watching 'Avatar: Fire and Ash' last weekend",
+    "Qiaoni is planning to travel to Florida next spring",
+    "Qiaoni recently tried a new ramen restaurant downtown",
+    "Qiaoni is currently reading a historical novel"
+]
+
+qiaoni_query = "What makes Qiaoni a great contributor to a team project?"
+
 # ---------- Dataset 1: Milk tea experiences ----------
 milk_tea_logs = [
     "I drank a warm brown sugar milk tea and felt relaxed, happy, and satisfied",
@@ -53,6 +67,7 @@ def vector_search(logs, query, title):
         print(f"- {log}  (score={score:.3f})")
 
 # ---------- Run both searches ----------
+vector_search(qiaoni_logs, qiaoni_query, "Qiaoni Search")
 vector_search(milk_tea_logs, milk_tea_query, "Milk Tea Search")
 vector_search(coffee_logs, coffee_query, "Coffee Search")
 
