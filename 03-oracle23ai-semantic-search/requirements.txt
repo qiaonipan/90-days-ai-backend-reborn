@@ -1,0 +1,4 @@
+openai
+oracledb
+python-dotenv
+numpy
