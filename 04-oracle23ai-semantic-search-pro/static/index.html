@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle 26ai Cloud Vector Semantic Search Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        .results {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid #1a73e8;
+            background: #f0f7ff;
+            border-radius: 5px;
+        }
+        .rank {
+            font-weight: bold;
+            color: #1a73e8;
+            font-size: 1.2em;
+        }
+        .similarity {
+            color: #e91e63;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Oracle 26ai Cloud Vector Semantic Search Demo 🚀</h1>
+    <p class="subtitle" style="line-height: 1.8;">
+        Laid-off Developer Qiaoni's Reskilling Project<br>
+        <strong>Enterprise Intelligent Search with Oracle 26ai Cloud Database</strong>
+    </p>
+
+    <div class="input-area">
+        <input type="text" id="query" placeholder="Enter your question (e.g.: Which milk tea made me feel happiest?)">
+        <button onclick="search()">Search</button>
+    </div>
+
+    <div class="results" id="results">
+        <p style="color: #666; text-align: center;">
+            👆 Enter a question and click Search — the most relevant log results will appear here.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>Tech stack: OpenAI Embedding + Oracle Autonomous Database 26ai + FastAPI</p>
+        <p>GitHub: <a href="https://github.com/qiaonipan99-dotcom/90-days-ai-backend-reborn" target="_blank">View source code</a></p>
+    </div>
+
+    <script>
+        async function search() {
+            const query = document.getElementById('query').value.trim();
+            if (!query) {
+                alert("Please enter a question.");
+                return;
+            }
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = "<p>Searching, please wait...</p>";
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query: query, top_k: 3})
+                });
+
+                const data = await response.json();
+
+                if (data.results.length === 0) {
+                    resultsDiv.innerHTML = "<p>No relevant results found, try another query.</p>";
+                    return;
+                }
+
+                let html = `<p><strong>Query:</strong> ${data.query}</p>`;
+                data.results.forEach(item => {
+                    html += `
+                    <div class="result-item">
+                        <div class="rank">Rank ${item.rank} (similarity <span class="similarity">${item.similarity}</span>)</div>
+                        <p>${item.text}</p>
+                    </div>`;
+                });
+
+                resultsDiv.innerHTML = html;
+            } catch (err) {
+                resultsDiv.innerHTML = "<p style='color:red;'>An error occurred. Please check whether the service is running.</p>";
+            }
+        }
+    </script>
+</body>
+</html>
