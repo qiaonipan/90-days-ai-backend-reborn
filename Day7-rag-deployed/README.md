@@ -1,3 +1,6 @@
+**Paused ORDS PL/SQL POST body handling due to ORDS handler semantics.
+Will revisit with SQL handler or middleware. TAT**
+
 # Oracle 26ai Cloud Vector Semantic Search (RAG Prototype)
 
 > **A production-style semantic search and RAG system built on real HDFS logs — exploring both the capabilities and the limits of AI-assisted operational diagnosis.**
