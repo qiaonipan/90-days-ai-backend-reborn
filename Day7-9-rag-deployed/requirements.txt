@@ -1,0 +1,7 @@
+openai
+oracledb
+python-dotenv
+numpy
+fastapi
+uvicorn
+pydantic

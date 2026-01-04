@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle 26ai Cloud Vector Semantic Search Demo</title>
+        <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        .results {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            background: #f8fbff;
+            border-left: 6px solid #1a73e8;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .rank {
+            font-weight: bold;
+            color: #1a73e8;
+            font-size: 1.2em;
+            margin-bottom: 4px;
+        }
+        .similarity {
+            color: #e91e63;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .highlight {
+            background-color: #fff59d;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .tip {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Oracle 26ai Cloud Vector Semantic Search</h1>
+    <p class="subtitle" style="line-height: 1.8;">
+        Laid-off Developer Qiaoni's Reskilling Project<br>
+        <strong>Enterprise Intelligent Search with Oracle 26ai Cloud Database</strong>
+    </p>
+
+    <div class="input-area">
+        <input type="text" id="query" placeholder="Try asking: e.g. 'what caused the block to be missing?' or 'DataNode failed'" style="width: 70%;">
+        <button onclick="search()">Search</button>
+    </div>
+
+    <div class="results" id="results">
+        <p class="tip">Try: "what caused the block to be missing" or "PacketResponder terminating"</p>
+        
+        <div class="result-item">
+            <div class="rank">Example — Rank 1 (similarity 0.789)</div>
+            <p>081110 145404 34 INFO dfs.DataNode$PacketResponder: <span class="highlight">PacketResponder</span> 1 for block blk_38865049064139660 <span class="highlight">terminating</span></p>
+        </div>
+        
+        <p class="tip" style="font-size:0.9em;">(Based on 1000+ real HDFS production logs)</p>
+    </div>
+    
+    <div class="footer">
+        <p>Tech stack: OpenAI Embedding + Oracle Autonomous Database 26ai + FastAPI</p>
+        <p>GitHub: <a href="https://github.com/qiaonipan99-dotcom/90-days-ai-backend-reborn" target="_blank">View source code</a></p>
+    </div>
+
+    <script>
+    async function search() {
+        const query = document.getElementById('query').value.trim() || "what caused the block to be missing";
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = "<p style='text-align:center;color:#666;'>Searching, please wait...</p>";
+
+        try {
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ query: query, top_k: 5 })
+            });
+
+            const data = await response.json();
+            console.log("API response:", data); 
+
+            const logs = data.retrieved_logs || [];
+
+            if (logs.length === 0) {
+                resultsDiv.innerHTML = "<p style='text-align:center;'>No relevant results found, try another query.</p>";
+                return;
+            }
+
+            let html = `
+                <p class="tip" style="font-size:1.1em;"><strong>AI Intelligent Diagnosis:</strong></p>
+                <div class="result-item" style="background:#e8f5e8;border-left:6px solid #4caf50;">
+                    <div style="font-size:1.05em;line-height:1.8;">
+                        ${(() => {
+                            const summary = data.ai_summary || "No summary available";
+                            // Remove ### and ** symbols
+                            const cleanSummary = summary.replace(/###/g, '').replace(/\*\*/g, '');
+                            
+                            // Split by numbered points (1., 2., 3., etc.)
+                            const points = cleanSummary
+                                .split(/(?=\d+\.\s)/g)
+                                .map(p => p.trim())
+                                .filter(p => p.length > 0);
+                            
+                            if (points.length <= 1) {
+                                // If no clear numbered points, split by paragraph breaks
+                                return cleanSummary
+                                    .split(/\n\n+/)
+                                    .map(p => p.trim())
+                                    .filter(p => p.length > 0)
+                                    .map(p => `<p style="margin-bottom:14px;"><strong>•</strong> ${p}</p>`)
+                                    .join('');
+                            } else {
+                                // Display numbered points
+                                return points
+                                    .map(p => `<p style="margin-bottom:14px;">${p}</p>`)
+                                    .join('');
+                            }
+                        })()}
+                    </div>
+                </div>
+
+                <p class="tip" style="font-size:1.1em;">
+                    <strong>Retrieved Raw Log Evidence (Top ${logs.length}):</strong>
+                </p>
+            `;
+
+            logs.forEach(item => {
+                let highlightedText = item.text;
+
+                const queryWords = query.toLowerCase().split(' ');
+                queryWords.forEach(word => {
+                    if (word.length > 2) {
+                        const regex = new RegExp(`(${word})`, 'gi');
+                        highlightedText = highlightedText.replace(
+                            regex,
+                            '<span class="highlight">$1</span>'
+                        );
+                    }
+                });
+
+                html += `
+                    <div class="result-item">
+                        <div class="rank">
+                            Rank ${item.rank} (similarity 
+                            <span class="similarity">${item.similarity.toFixed(3)}</span>)
+                        </div>
+                        <p style="font-size:1.05em;">${highlightedText}</p>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+
+        } catch (err) {
+            console.error("Frontend error:", err);
+            resultsDiv.innerHTML = `
+                <p style='color:red;text-align:center;'>
+                    An error occurred. Please check whether the service is running.
+                </p>
+            `;
+        }
+    }
+    </script>
+
+</body>
+</html>
