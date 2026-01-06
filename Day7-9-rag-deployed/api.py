@@ -14,25 +14,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # =========================
-# OpenAI & Oracle config
+# OpenAI config
 # =========================
 client = OpenAI()
-
-username = os.getenv("ORACLE_USERNAME")
-password = os.getenv("ORACLE_PASSWORD")
-dsn = os.getenv("ORACLE_DSN")
-wallet_path = os.getenv("ORACLE_WALLET_PATH")
 
 # =========================
 # Oracle DB connection
 # =========================
 connection = oracledb.connect(
-    user=username,
-    password=password,
-    dsn=dsn,
-    config_dir=wallet_path,
-    wallet_location=wallet_path,
-    wallet_password=password
+    user=os.getenv("ORACLE_USERNAME"),
+    password=os.getenv("ORACLE_PASSWORD"),
+    dsn=os.getenv("ORACLE_DSN"),
+    config_dir=os.getenv("TNS_ADMIN"),
+    wallet_location=os.getenv("WALLET_LOCATION"),
+    wallet_password=os.getenv("WALLET_PASSWORD")
 )
 cursor = connection.cursor()
 
