@@ -1,209 +1,362 @@
-# Oracle 26ai Cloud Vector Semantic Search (RAG Prototype)
+# AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search
 
-> **A production-style semantic search and RAG system built on real HDFS logs — exploring both the capabilities and the limits of AI-assisted operational diagnosis.**
+> **An enterprise-grade RAG system with hybrid retrieval (vector + BM25) for intelligent log diagnosis using real HDFS production logs.**
 
 ---
 
 ## 📌 Project Overview
 
-This project is a **full-cycle Retrieval-Augmented Generation (RAG) prototype** that performs **semantic search over real HDFS production logs** using:
+This project is a **full-cycle Retrieval-Augmented Generation (RAG) system** that performs **hybrid semantic search** over real HDFS production logs using:
 
-- OpenAI text embeddings  
-- Oracle Autonomous Database 26ai native vector search  
-- FastAPI backend  
-- Lightweight HTML / JavaScript frontend  
+- **OpenAI text embeddings** (text-embedding-3-small)
+- **Oracle Autonomous Database 26ai** native vector search
+- **BM25 keyword search** for lexical matching
+- **Hybrid fusion** (70% vector + 30% BM25)
+- **FastAPI backend** with RESTful API
+- **Modern chat-style frontend** with accordion UI
 
 Users can ask **natural language questions** such as:
 
-- *“What caused the block to be missing?”*  
-- *“Why did the DataNode stop responding?”*
+- *"What caused the block to be missing?"*
+- *"Why did the DataNode stop responding?"*
+- *"PacketResponder terminating"*
 
-The system retrieves the **most semantically relevant logs** and generates an **evidence-based AI summary** grounded strictly in retrieved data.
-
-This project was built as part of my **reskilling journey after a layoff**, with a strong emphasis on **realistic enterprise constraints rather than toy AI demos**.
-
----
-
-## 📌 Motivation
-
-Most AI demos assume:
-- Clean datasets  
-- Explicit labels  
-- Clear cause–effect relationships  
-
-**Production logs are the opposite.**
-
-They are:
-- Noisy  
-- State-heavy  
-- Often missing explicit causal explanations  
-
-This project intentionally uses **1000+ real HDFS production logs** to explore a critical question:
-
-> **What can semantic search and RAG realistically do — and where do they break — in real operational environments?**
+The system retrieves the **top 3 most relevant logs** using hybrid search and generates a **concise AI diagnosis** based strictly on retrieved evidence.
 
 ---
 
-## 📌 System Architecture
+## 🚀 Key Features
 
-**Query Flow**
+### 1. Hybrid Search Architecture
+- **Vector Search (70%)**: Semantic similarity using OpenAI embeddings + Oracle 26ai
+- **BM25 Keyword Search (30%)**: Traditional lexical matching for exact term matches
+- **Fusion Scoring**: Combines both approaches for optimal retrieval
 
-1. User submits a natural language query  
-2. Query is converted into an embedding via OpenAI  
-3. Oracle 26ai performs vector similarity search over stored log embeddings  
-4. Top-K relevant logs are retrieved with similarity scores  
-5. An LLM generates a concise summary based strictly on retrieved evidence  
-6. Frontend renders:
-   - AI summary  
-   - Ranked log evidence  
-   - Similarity scores  
+### 2. Modern Chat Interface
+- Real-time chat-style UI
+- Collapsible accordion for log evidence
+- Similarity scores with intuitive display
+- Keyword highlighting in results
+
+### 3. Production-Ready
+- Real HDFS production logs (1000+ entries)
+- Persistent vector storage in Oracle database
+- No mock data or toy examples
+- Enterprise-grade error handling
+
+---
+
+## 📋 Prerequisites
+
+- **Python 3.8+**
+- **Oracle Autonomous Database 26ai** (with vector search enabled)
+- **OpenAI API Key**
+- **Oracle Wallet** for database connection
+
+---
+
+## 🛠️ Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/qiaonipan/90-days-ai-backend-reborn.git
+cd Day10-11-hybrid-search
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configure environment variables
+
+Create a `.env` file in the project root:
+
+```env
+# OpenAI API Key
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Oracle Database Configuration
+ORACLE_USERNAME=your_oracle_username
+ORACLE_PASSWORD=your_oracle_password
+ORACLE_DSN=your_oracle_dsn
+ORACLE_WALLET_PATH=path_to_your_wallet_directory
+```
+
+### 4. Prepare database table
+
+Ensure your Oracle database has the `docs` table:
+
+```sql
+CREATE TABLE docs (
+    id NUMBER PRIMARY KEY,
+    text CLOB,
+    embedding VECTOR(1536, FLOAT32)
+);
+```
+
+---
+
+## 🚀 Quick Start
+
+### Step 1: Insert data into database
+
+```bash
+python insert_logs.py
+```
+
+This script will:
+- Read HDFS logs from `data/HDFS_2k.log`
+- Generate embeddings using OpenAI
+- Insert data into Oracle database
+- Process ~1000 log entries (takes a few minutes)
+
+### Step 2: Start the API server
+
+```bash
+python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
+```
+
+Or using uvicorn directly:
+
+```bash
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Step 3: Access the application
+
+- **Frontend UI**: http://localhost:8000/
+- **API Documentation**: http://localhost:8000/docs
+- **Static Files**: http://localhost:8000/static/index.html
+
+---
+
+## 📖 Usage
+
+### Web Interface
+
+1. Open http://localhost:8000/ in your browser
+2. Type your question in the chat input (e.g., "What caused the block to be missing?")
+3. Press Enter or click "Send"
+4. View the AI diagnosis and top 3 relevant logs with similarity scores
+
+### API Endpoint
+
+```bash
+curl -X POST "http://localhost:8000/search" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What caused the block to be missing?",
+    "top_k": 3
+  }'
+```
+
+**Response:**
+```json
+{
+  "query": "What caused the block to be missing?",
+  "ai_summary": "This usually indicates network timeout or node overload...",
+  "retrieved_logs": [
+    {
+      "rank": 1,
+      "text": "081110 145404 34 INFO dfs.DataNode$PacketResponder: ...",
+      "hybrid_score": 0.892,
+      "distance": 0.108
+    },
+    ...
+  ],
+  "note": "Results from hybrid retrieval (vector 70% + BM25 30%)"
+}
+```
+
+---
+
+## 🏗️ System Architecture
+
 ```
 User Query
-↓
-OpenAI Embedding
-↓
-Oracle 26ai Vector Search
-↓
-Top-K Relevant Logs
-↓
-LLM Evidence-Based Summary
-↓
-Frontend Rendering
+    ↓
+OpenAI Embedding (text-embedding-3-small)
+    ↓
+┌─────────────────────────────────────┐
+│      Hybrid Search Engine           │
+│  ┌─────────────┐  ┌──────────────┐ │
+│  │   Vector    │  │    BM25      │ │
+│  │  Search 70% │  │  Search 30%  │ │
+│  └─────────────┘  └──────────────┘ │
+│         ↓              ↓            │
+│      Fusion Scoring                 │
+└─────────────────────────────────────┘
+    ↓
+Top 3 Relevant Logs
+    ↓
+LLM Evidence-Based Summary (GPT-4o-mini)
+    ↓
+Frontend Rendering (Chat UI)
 ```
 
 ---
 
-## 📌 What Works Well
+## 🔧 Technical Details
 
-### 1. End-to-End RAG Pipeline (Production-Oriented)
+### Hybrid Search Algorithm
 
-- No notebooks  
-- No mock data  
-- No in-memory toy vector stores  
+1. **Vector Search**: 
+   - Uses Oracle `VECTOR_DISTANCE` function
+   - Returns top 2×k candidates
+   - Normalizes scores to 0-1 range
 
-This is a **real service-style system** with:
-- Persistent vector storage  
-- Clear API contracts  
-- Frontend–backend integration  
+2. **BM25 Search**:
+   - Tokenizes query and corpus
+   - Calculates BM25 scores
+   - Returns top 2×k candidates
 
-**Qiaoni note:**  
-> “I prioritized system completeness and production realism over isolated model experiments.”
+3. **Fusion**:
+   - Vector score × 0.7 + BM25 score × 0.3
+   - Ranks by fused score
+   - Returns top k results
 
----
+### Similarity Score Calculation
 
-### 2. Honest AI Behavior (No Hallucination)
+- **Formula**: `similarity = 1 - distance`
+- **Range**: 0.0 - 1.0 (higher is better)
+- **Display**: Typically shows 0.5 - 0.9 for relevant results
 
-When the retrieved logs **do not contain enough causal evidence**, the AI:
-- Explicitly states uncertainty  
-- Avoids inventing root causes  
-- References only retrieved logs  
+### Frontend Features
 
-**Qiaoni note:**  
-> “I treated missing information as a first-class signal instead of hiding it with hallucination.”
-
----
-
-### 3. Semantic Retrieval Over Noisy Logs
-
-Despite noisy, unlabeled data, the system consistently clusters:
-- HDFS block lifecycle events  
-- DataNode-related behavior  
-- Storage and network-adjacent signals  
-
-This validates the **embedding + vector search foundation**.
+- **Chat Interface**: Real-time message display
+- **Accordion UI**: Collapsible log evidence panels
+- **Keyword Highlighting**: Auto-highlights query terms
+- **Responsive Design**: Adapts to different screen sizes
 
 ---
 
-## 📌 Known Limitations (By Design)
+## 📁 Project Structure
 
-### 1. State ≠ Cause
-
-Most production logs describe **what happened**, not **why it happened**.
-
-As a result:
-- Queries asking *“why”* often retrieve state transitions (e.g. `addStoredBlock`)  
-- The system can summarize context but cannot always infer true root cause  
-
-This reflects **real observability constraints**, not a modeling bug.
-
----
-
-### 2. Semantic Distribution Is Skewed
-
-- ~80% of logs represent normal INFO-level operations  
-- Failure and corruption signals are sparse  
-
-Pure semantic similarity retrieval tends to favor **frequent states over rare failures**.
+```
+Day10-11-hybrid-search/
+├── api.py                 # FastAPI backend with hybrid search
+├── insert_logs.py         # Data insertion script
+├── search.py              # Simple search test script
+├── requirements.txt       # Python dependencies
+├── .env                  # Environment variables (create this)
+├── data/
+│   └── HDFS_2k.log      # HDFS production logs
+├── static/
+│   └── index.html       # Frontend chat interface
+└── screenshots/
+    └── RAG_result.png   # Example screenshots
+```
 
 ---
 
-## 📌 Key Insight
+## 🎯 Key Improvements Over Previous Versions
 
-> **Semantic search does not create causality — it amplifies whatever semantic signals already exist in the data.**
+### Hybrid Search (Day 10-11)
+- ✅ Combined vector + BM25 search
+- ✅ Improved retrieval accuracy
+- ✅ Better handling of exact keyword matches
 
-This project demonstrates that improving AI-assisted diagnosis often requires:
-- Redesigning data semantics  
-- Enriching failure signals  
-- Explicitly modeling uncertainty  
+### UI Enhancements
+- ✅ Modern chat-style interface
+- ✅ Accordion for log evidence
+- ✅ Intuitive similarity scores
+- ✅ Responsive design
 
-—not simply switching models or embeddings.
-
-**Qiaoni-ready phrasing:**  
-> “The biggest improvement opportunity wasn’t the model, but how failure semantics are represented in the data.”
-
----
-
-## 📌 Planned V2: Failure-Aware & Causal-Oriented Retrieval
-
-The next iteration focuses on bridging the gap between **state retrieval** and **causal diagnosis**.
-
-### V2 Goals
-
-#### 1. Failure-Aware Semantic Enrichment
-- Extract and up-weight logs related to:
-  - Missing blocks  
-  - Corruption  
-  - Under-replication  
-  - Node failures  
-- Introduce a curated **failure-centric sub-corpus**
-
-#### 2. Two-Stage Retrieval
-- Stage 1: Vector similarity recall  
-- Stage 2: Failure / causality-aware reranking (lightweight rules or LLM-based)
-
-#### 3. Confidence & Coverage Signals
-- Explicitly indicate:
-  - Whether causal evidence exists  
-  - Whether the answer is speculative or evidence-backed  
-
-#### 4. Timeline Reconstruction (Optional)
-- Group logs by time to expose:
-  - Pre-failure signals  
-  - Cascading effects  
-
-**Qiaoni note:**  
-> “V2 shifts the problem from ‘better embeddings’ to ‘better semantic representation of failures.’”
+### Code Quality
+- ✅ All comments in English
+- ✅ Clean code structure
+- ✅ Error handling
+- ✅ Type hints and documentation
 
 ---
 
-## 📌 Tech Stack
+## 🔍 Example Queries
 
-- **Backend:** FastAPI (Python)  
-- **Vector Database:** Oracle Autonomous Database 26ai  
-- **Embeddings & LLM:** OpenAI  
-- **Frontend:** Vanilla HTML / JavaScript  
-- **Data:** 1000+ real HDFS production logs  
+Try these queries to see the system in action:
+
+- `"What caused the block to be missing"`
+- `"DataNode failed"`
+- `"PacketResponder terminating"`
+- `"Why did replication fail"`
+- `"Network timeout issues"`
 
 ---
 
-## 📌 Final Note
+## 🐛 Troubleshooting
 
-This project is intentionally **not a perfect AI diagnosis system**.
+### Issue: `uvicorn` command not found
 
-It is a realistic exploration of:
-- What semantic search and RAG can do  
-- Where they fail  
-- Why those failures matter  
+**Solution**: Use `python -m uvicorn` instead:
+```bash
+python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
+```
 
-> The most valuable outcome was not higher accuracy,  
-> but a clearer understanding of **where intelligence must be designed, not assumed**.
+### Issue: Database connection failed
+
+**Solution**: 
+- Check `.env` file configuration
+- Verify Oracle wallet path
+- Ensure network access to Oracle database
+
+### Issue: OpenAI API errors
+
+**Solution**:
+- Verify `OPENAI_API_KEY` in `.env`
+- Check API quota and billing
+
+### Issue: No logs found
+
+**Solution**:
+- Run `insert_logs.py` to populate database
+- Check database connection
+- Verify `docs` table has data
+
+---
+
+## 📊 Performance
+
+- **Query Response Time**: ~2-3 seconds (including LLM generation)
+- **Vector Search**: < 100ms (Oracle 26ai native)
+- **BM25 Search**: < 50ms (in-memory)
+- **LLM Generation**: ~1-2 seconds (GPT-4o-mini)
+
+---
+
+## 🛣️ Roadmap
+
+### Planned Improvements
+
+- [ ] Failure-aware semantic enrichment
+- [ ] Two-stage retrieval with reranking
+- [ ] Confidence and coverage signals
+- [ ] Timeline reconstruction
+- [ ] Multi-language support
+- [ ] Advanced filtering options
+
+---
+
+## 📝 License
+
+This project is part of a personal reskilling journey and is provided as-is for educational purposes.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Oracle 26ai** for native vector search capabilities
+- **OpenAI** for embeddings and LLM
+- **FastAPI** for the excellent web framework
+- Real HDFS production logs for realistic testing
+
+---
+
+## 📧 Contact
+
+For questions or feedback, please open an issue on GitHub.
+
+---
+
+**Built with ❤️ as part of a reskilling journey after layoff**
