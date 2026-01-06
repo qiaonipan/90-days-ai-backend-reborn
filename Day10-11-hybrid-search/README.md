@@ -23,6 +23,12 @@ Users can ask **natural language questions** such as:
 
 The system retrieves the **top 3 most relevant logs** using hybrid search and generates a **concise AI diagnosis** based strictly on retrieved evidence.
 
+### Project Screenshot
+
+![RAG Result](screenshots/res.png)
+
+*Example query result showing AI diagnosis and retrieved log evidence with similarity scores*
+
 ---
 
 ## 🚀 Key Features
