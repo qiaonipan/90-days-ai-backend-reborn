@@ -123,11 +123,15 @@ def hybrid_search(request: QueryRequest):
 
     # Step 4: Fusion scoring
     fused_scores = {}
+    # Store original distances for each text
+    text_to_distance = {}
 
     # Vector results
     distances = [d for _, d in vector_results]
     max_distance = max(distances) if distances else 1
     for text, distance in vector_results:
+        # Store the original distance for this text
+        text_to_distance[text] = distance
         vector_score = 1 - (distance / max_distance if max_distance > 0 else 0)
         fused_scores[text] = fused_scores.get(text, 0) + vector_score * 0.7
 
@@ -143,10 +147,13 @@ def hybrid_search(request: QueryRequest):
 
     retrieved_logs = []
     for rank, (text, hybrid_score) in enumerate(final_results, 1):
+        # Get the original distance for this text, or use a default if not found
+        original_distance = text_to_distance.get(text, None)
         retrieved_logs.append({
             "rank": rank,
             "text": text,
-            "hybrid_score": round(hybrid_score, 4)
+            "hybrid_score": round(hybrid_score, 4),
+            "distance": round(original_distance, 4) if original_distance is not None else None
         })
 
     # Step 5: RAG generation 

@@ -360,22 +360,19 @@
                             highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
                         }
                     });
-                    // Use exponential decay formula to make scores higher and more intuitive
-                    let displayScore = 'N/A';
-                    if (item.hybrid_score !== undefined) {
-                        // hybrid_score is already a value between 0-1, use exponential decay to make it appear higher
-                        // Formula: similarity = exp(-(1 - score)), so 0.8 becomes ~0.82, 0.9 becomes ~0.90
-                        const normalizedScore = item.hybrid_score;
-                        displayScore = Math.exp(-(1 - normalizedScore)).toFixed(3);
-                    } else if (item.similarity !== undefined) {
-                        displayScore = Math.exp(-(1 - item.similarity)).toFixed(3);
+                    let similarity = 'N/A';
+                    if (item.distance !== undefined && item.distance !== null) {
+         
+                        similarity = (1 - item.distance).toFixed(3);
+                    } else if (item.hybrid_score !== undefined && item.hybrid_score !== null) {
+                        similarity = item.hybrid_score.toFixed(3);
                     }
                     
                     const isActive = index === 0 ? 'active' : '';
                     aiHtml += `
                     <div class="accordion">
                         <div class="accordion-header ${isActive}" onclick="toggleAccordion(this)">
-                            <div class="accordion-title">Rank ${item.rank} (score <span class="accordion-score">${displayScore}</span>)</div>
+                            <div class="accordion-title">Rank ${item.rank} (similarity <span class="accordion-score">${similarity}</span> <span style="font-size:0.85em;color:#666;"></span>)</div>
                             <span class="accordion-icon">▼</span>
                         </div>
                         <div class="accordion-content ${isActive}">
