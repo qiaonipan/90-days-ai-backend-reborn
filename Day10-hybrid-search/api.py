@@ -2,7 +2,7 @@ import os
 import array
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
 from openai import OpenAI
 import oracledb
@@ -71,6 +71,11 @@ app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 @app.get("/", tags=["Frontend"])
 def redirect_to_frontend():
     return RedirectResponse(url="/static/index.html")
+
+@app.get("/favicon.ico", tags=["Frontend"])
+def favicon():
+    # Return 204 No Content to avoid 404 errors
+    return Response(status_code=204)
 
 # =========================
 # Request model

@@ -31,51 +31,8 @@ cursor = connection.cursor()
 cursor.execute("DELETE FROM docs")
 connection.commit()
 
-# ---------- Small dataset (expanded Qiaoni section) ----------
-datasets = [
-    ("Qiaoni's profile and preferences", [
-        # Basic traits
-        "Qiaoni is a motivated individual who loves to explore new technologies",
-        "Qiaoni has a passion for sharing knowledge with others",
-        "Qiaoni enjoys working on collaborative projects and learning from peers",
-        "Qiaoni consistently takes initiative to solve problems before they escalate",
-        "Qiaoni communicates clearly and adapts well to feedback",
-        "Qiaoni is resilient and turns challenges into learning opportunities",
-        "Qiaoni values work-life balance and enjoys quality time with family",
-
-        # Interests and hobbies
-        "Qiaoni loves reading historical novels and biographies in her free time",
-        "Qiaoni enjoys watching sci-fi movies, especially the Avatar series",
-        "Qiaoni is learning AI and cloud database technologies as a personal challenge",
-        "Qiaoni likes long walks in the park to clear her mind",
-        "Qiaoni practices meditation every morning for 10 minutes",
-        "Qiaoni enjoys gardening and has several potted plants at home",
-
-        # Food preferences
-        "Qiaoni's favorite food is homemade dumplings with vinegar",
-        "Qiaoni loves spicy Sichuan hotpot on cold days",
-        "Qiaoni enjoys fresh seafood, especially steamed fish",
-        "Qiaoni likes trying new dessert shops on weekends",
-        "Qiaoni prefers light breakfasts like congee and youtiao",
-        "Qiaoni's comfort food is tomato egg noodle soup",
-        "Qiaoni enjoys fruit teas more than milk teas",
-
-        # Travel and lifestyle
-        "Qiaoni is planning to travel to Florida next spring",
-        "Qiaoni dreams of visiting Japan during cherry blossom season",
-        "Qiaoni recently tried a new ramen restaurant downtown and loved it",
-        "Qiaoni prefers quiet cafes for working or reading",
-        "Qiaoni enjoys family gatherings and cooking big meals together",
-        "Qiaoni values lifelong learning and personal growth",
-
-        # Daily habits
-        "Qiaoni wakes up at 6:30 AM every day",
-        "Qiaoni drinks two cups of green tea daily",
-        "Qiaoni tracks her reading progress with a notebook",
-        "Qiaoni organizes her code projects meticulously",
-        "Qiaoni believes in continuous self-improvement after career setbacks"
-    ])
-]
+# Initialize datasets list
+datasets = []
 
 # ---------- Large logs: HDFS real production logs ----------
 try:
