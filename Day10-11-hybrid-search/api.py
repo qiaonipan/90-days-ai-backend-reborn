@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 import oracledb
 from dotenv import load_dotenv
-from rank_bm25 import BM25Okapi  # 新加：BM25 关键字搜索
+from rank_bm25 import BM25Okapi  # BM25 keyword search
 
 # =========================
 # Load environment variables
@@ -38,13 +38,13 @@ connection = oracledb.connect(
 cursor = connection.cursor()
 
 # =========================
-# 加载所有日志用于 BM25（全局初始化一次）
+# Load all logs for BM25 (global initialization once)
 # =========================
 cursor.execute("SELECT text FROM docs")
 all_logs = cursor.fetchall()
 all_texts = [log[0].strip() for log in all_logs if log[0]]
 
-# BM25 初始化（分词）
+# BM25 initialization (tokenization)
 tokenized_corpus = [text.split() for text in all_texts]
 bm25 = BM25Okapi(tokenized_corpus)
 
@@ -82,7 +82,7 @@ def favicon():
 # =========================
 class QueryRequest(BaseModel):
     query: str = "What caused the block to be missing?"
-    top_k: int = 5
+    top_k: int = 3
 
 # =========================
 # Hybrid Search API
@@ -114,7 +114,7 @@ def hybrid_search(request: QueryRequest):
     tokenized_query = request.query.split()
     bm25_scores = bm25.get_scores(tokenized_query)
     
-    # 修复：判断 bm25_scores 是否全为 0
+    # Fix: Check if all bm25_scores are 0
     if bm25_scores.max() == 0:
         bm25_results = []
     else:
@@ -124,21 +124,21 @@ def hybrid_search(request: QueryRequest):
     # Step 4: Fusion scoring
     fused_scores = {}
 
-    # 向量结果
+    # Vector results
     distances = [d for _, d in vector_results]
     max_distance = max(distances) if distances else 1
     for text, distance in vector_results:
         vector_score = 1 - (distance / max_distance if max_distance > 0 else 0)
         fused_scores[text] = fused_scores.get(text, 0) + vector_score * 0.7
 
-    # BM25 结果
+    # BM25 results
     if bm25_results:
         max_bm25 = max([score for _, score in bm25_results])
         for text, score in bm25_results:
             bm25_norm = score / max_bm25 if max_bm25 > 0 else 0
             fused_scores[text] = fused_scores.get(text, 0) + bm25_norm * 0.3
 
-    # 最终排序
+    # Final sorting
     final_results = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)[:request.top_k]
 
     retrieved_logs = []
@@ -161,10 +161,8 @@ User question:
 Relevant logs retrieved via hybrid search:
 {context}
 
-Please answer in English:
-1. Most likely root cause
-2. Key evidence from logs
-3. Possible alternatives if uncertain
+Please provide a brief one-sentence explanation in English about what these logs typically indicate. 
+Keep it concise and actionable (e.g., "This usually indicates network timeout or node overload...").
 """
 
         completion = client.chat.completions.create(
