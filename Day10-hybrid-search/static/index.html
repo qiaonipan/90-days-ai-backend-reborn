@@ -200,12 +200,7 @@
 
                 html += `
                     <div class="result-item">
-                        <div class="rank">
-                            Rank ${item.rank} (score 
-                            <span class="similarity">
-                                ${item.hybrid_score}
-                            </span>)
-                        </div>
+                        <div class="rank">Rank $$ {item.rank} (score <span class="similarity"> $${item.hybrid_score.toFixed(3)}</span>)</div>
                         <p style="font-size:1.05em;">${highlightedText}</p>
                     </div>
                 `;
