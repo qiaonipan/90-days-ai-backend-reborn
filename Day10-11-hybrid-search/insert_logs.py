@@ -43,10 +43,10 @@ try:
     # Filter out empty or too-short lines; each line is a log entry
     hdfs_logs = [line.strip() for line in lines if line.strip() and len(line.strip()) > 20]
 
-    # Take the first 1000 entries (Oracle Always Free is sufficient; faster inserts)
-    hdfs_logs = hdfs_logs[:1000]
+    # Take the first 2000 entries (Oracle Always Free is sufficient; faster inserts)
+    hdfs_logs = hdfs_logs[:2000]
 
-    datasets.append(("HDFS real production logs (1000 items)", hdfs_logs))
+    datasets.append(("HDFS real production logs (2000 items)", hdfs_logs))
     print(f"Successfully loaded {len(hdfs_logs)} real HDFS production logs; will insert into database")
 except Exception as e:
     print(f"Failed to load large logs (small dataset unaffected): {e}")
