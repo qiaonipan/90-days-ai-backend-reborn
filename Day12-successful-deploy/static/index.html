@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search</title>
+    <style>
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin: 0 0 20px 0;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+        .chat-container {
+            max-width: 1200px;
+            width: 95%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        @media (min-width: 1400px) {
+            .chat-container {
+                max-width: 1400px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                border-radius: 0;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            max-width: 85%;
+        }
+        
+        @media (min-width: 1200px) {
+            .message {
+                max-width: 1000px;
+            }
+        }
+        .user-message {
+            align-self: flex-end;
+        }
+        .ai-message {
+            align-self: flex-start;
+        }
+        .message-content {
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.6;
+        }
+        .user-message .message-content {
+            background: #1a73e8;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-message .message-content {
+            background: #f1f3f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            background: #e8f5e8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        .highlight {
+            background: #fff59d;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .log-item {
+            background: #f8fbff;
+            padding: 12px;
+            margin: 10px 0;
+            border-left: 4px solid #1a73e8;
+            border-radius: 8px;
+        }
+        .accordion {
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+        .accordion-header {
+            background: #f8fbff;
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s;
+        }
+        .accordion-header:hover {
+            background: #e8f0fe;
+        }
+        .accordion-header.active {
+            background: #e3f2fd;
+            border-bottom: 1px solid #1a73e8;
+        }
+        .accordion-title {
+            font-weight: 600;
+            color: #1a73e8;
+            flex: 1;
+        }
+        .accordion-score {
+            color: #e91e63;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .accordion-icon {
+            transition: transform 0.3s;
+            font-size: 14px;
+            color: #666;
+        }
+        .accordion-header.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: #fafafa;
+        }
+        .accordion-content.active {
+            max-height: 1000px;
+        }
+        .accordion-body {
+            padding: 16px;
+            border-top: 1px solid #e0e0e0;
+            line-height: 1.6;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #333;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+        .footer a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search</h1>
+    <p class="subtitle">
+        Laid-off Developer Qiaoni's Reskilling Project<br>
+        <strong>Enterprise Intelligent Diagnosis LLM RAG</strong>
+    </p>
+
+    <div class="chat-container">
+        <div id="chat-messages" class="chat-messages">
+            <!-- System welcome message -->
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content">
+                    <p>Hello! I'm your HDFS log intelligent diagnosis assistant.</p>
+                    <p>You can ask me any production questions, such as:</p>
+                    <ul>
+                        <li>"What caused the block to be missing"</li>
+                        <li>"DataNode failed"</li>
+                    </ul>
+                    <p>Below is an example query～</p>
+                </div>
+            </div>
+
+            <!-- Example user question -->
+            <div class="message user-message">
+                <div class="message-content">
+                    PacketResponder terminating
+                </div>
+            </div>
+
+            <!-- Example AI response (hardcoded) -->
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content">
+                    <p style="margin-bottom: 16px;"><strong>💡 AI Diagnosis:</strong> This usually indicates normal block transfer completion, but may suggest network interruption or client connection issues if accompanied by error logs.</p>
+                    <p><strong>Retrieved Raw Log Evidence (Top 3):</strong></p>
+                    <div class="accordion">
+                        <div class="accordion-header active" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank 1 (score <span class="accordion-score">0.897</span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content active">
+                            <div class="accordion-body">
+                                081110 145404 34 INFO dfs.DataNode$PacketResponder: <span class="highlight">PacketResponder</span> 1 for block blk_38865049064139660 <span class="highlight">terminating</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank 2 (score <span class="accordion-score">0.784</span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="accordion-body">
+                                081110 145404 34 INFO dfs.DataNode$DataXceiver: Receiving block blk_38865049064139660 src: /10.251.214.32:50010 dest: /10.251.214.32:50010
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank 3 (score <span class="accordion-score">0.757</span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="accordion-body">
+                                081110 145404 34 INFO dfs.DataNode$PacketResponder: Received block blk_38865049064139660 of size 67108864 from /10.251.214.32:50010
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="query" placeholder="Ask me a production question..." autofocus>
+            <button onclick="search()">Send</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Tech stack: OpenAI Embedding + Oracle Autonomous Database 26ai + FastAPI</p>
+        <p>GitHub: <a href="https://github.com/qiaonipan/90-days-ai-backend-reborn" target="_blank">View source code</a></p>
+    </div>
+
+    <script>
+    async function search() {
+        const query = document.getElementById('query').value.trim();
+        if (!query) return;
+
+        const chatMessages = document.getElementById('chat-messages');
+
+        // Add user message
+        chatMessages.innerHTML += `
+        <div class="message user-message">
+            <div class="message-content">${escapeHtml(query)}</div>
+        </div>`;
+
+        // Add thinking indicator
+        chatMessages.innerHTML += `
+        <div class="message ai-message" id="thinking">
+            <div class="ai-avatar">🚀</div>
+            <div class="message-content">
+                <p><em>Thinking...</em></p>
+            </div>
+        </div>`;
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        document.getElementById('query').value = '';
+
+        try {
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ query: query, top_k: 3 })
+            });
+
+            if (!response.ok) throw new Error('API error: ' + response.status);
+
+            const data = await response.json();
+
+            // Remove thinking indicator
+            const thinkingEl = document.getElementById('thinking');
+            if (thinkingEl) thinkingEl.remove();
+
+            let aiHtml = '';
+            
+            // Display AI diagnosis first
+            if (data.ai_summary) {
+                aiHtml += `<p style="margin-bottom: 16px;"><strong>💡 AI Diagnosis:</strong> ${data.ai_summary.replace(/\n/g, ' ').trim()}</p>`;
+            }
+            
+            // Then display logs
+            if (data.retrieved_logs && data.retrieved_logs.length > 0) {
+                aiHtml += `<p><strong>Retrieved Raw Log Evidence (Top ${data.retrieved_logs.length}):</strong></p>`;
+                data.retrieved_logs.forEach((item, index) => {
+                    let highlightedText = escapeHtml(item.text);
+                    const words = query.toLowerCase().split(' ');
+                    words.forEach(word => {
+                        if (word.length > 2) {
+                            const regex = new RegExp(`(${word})`, 'gi');
+                            highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
+                        }
+                    });
+                    let similarity = 'N/A';
+                    if (item.distance !== undefined && item.distance !== null) {
+         
+                        similarity = (1 - item.distance).toFixed(3);
+                    } else if (item.hybrid_score !== undefined && item.hybrid_score !== null) {
+                        similarity = item.hybrid_score.toFixed(3);
+                    }
+                    
+                    const isActive = index === 0 ? 'active' : '';
+                    aiHtml += `
+                    <div class="accordion">
+                        <div class="accordion-header ${isActive}" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank ${item.rank} (similarity <span class="accordion-score">${similarity}</span> <span style="font-size:0.85em;color:#666;"></span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content ${isActive}">
+                            <div class="accordion-body">${highlightedText}</div>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            chatMessages.innerHTML += `
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content">${aiHtml || 'No relevant logs found'}</div>
+            </div>`;
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        } catch (err) {
+            const thinkingEl = document.getElementById('thinking');
+            if (thinkingEl) thinkingEl.remove();
+            chatMessages.innerHTML += `
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content" style="color:red;">
+                    Error: ${escapeHtml(err.message)}<br>Please check network or backend service
+                </div>
+            </div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, match => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[match]);
+    }
+
+    function toggleAccordion(header) {
+        const accordion = header.closest('.accordion');
+        const content = accordion.querySelector('.accordion-content');
+        const isActive = header.classList.contains('active');
+        
+        if (isActive) {
+            header.classList.remove('active');
+            content.classList.remove('active');
+        } else {
+            header.classList.add('active');
+            content.classList.add('active');
+        }
+    }
+
+    // Send on Enter key press
+    document.getElementById('query').addEventListener('keypress', e => {
+        if (e.key === 'Enter') search();
+    });
+    </script>
+</body>
+</html>
