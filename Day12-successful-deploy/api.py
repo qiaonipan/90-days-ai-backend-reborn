@@ -45,14 +45,8 @@ all_logs = cursor.fetchall()
 all_texts = [log[0].strip() for log in all_logs if log[0]]
 
 # BM25 initialization (tokenization)
-# Handle empty corpus to avoid ZeroDivisionError
-if len(all_texts) > 0:
-    tokenized_corpus = [text.split() for text in all_texts]
-    bm25 = BM25Okapi(tokenized_corpus)
-else:
-    # Initialize with empty corpus if no data exists
-    bm25 = BM25Okapi([[""]])
-    print("Warning: No logs found in database. BM25 initialized with empty corpus.")
+tokenized_corpus = [text.split() for text in all_texts]
+bm25 = BM25Okapi(tokenized_corpus)
 
 # =========================
 # FastAPI app
@@ -117,17 +111,15 @@ def hybrid_search(request: QueryRequest):
     vector_results = cursor.fetchall()
 
     # Step 3: BM25 keyword search
-    bm25_results = []
-    if len(all_texts) > 0:
-        tokenized_query = request.query.split()
-        bm25_scores = bm25.get_scores(tokenized_query)
-        
-        # Fix: Check if all bm25_scores are 0
-        if bm25_scores.max() == 0:
-            bm25_results = []
-        else:
-            bm25_results = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:request.top_k * 2]
-            bm25_results = [(all_texts[i], bm25_scores[i]) for i in bm25_results]
+    tokenized_query = request.query.split()
+    bm25_scores = bm25.get_scores(tokenized_query)
+    
+    # Fix: Check if all bm25_scores are 0
+    if bm25_scores.max() == 0:
+        bm25_results = []
+    else:
+        bm25_results = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:request.top_k * 2]
+        bm25_results = [(all_texts[i], bm25_scores[i]) for i in bm25_results]
 
     # Step 4: Fusion scoring
     fused_scores = {}
