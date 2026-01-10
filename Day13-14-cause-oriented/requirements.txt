@@ -1,0 +1,8 @@
+openai
+oracledb
+python-dotenv
+numpy
+fastapi
+uvicorn
+pydantic
+rank-bm25
