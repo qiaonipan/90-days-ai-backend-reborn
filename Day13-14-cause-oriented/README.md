@@ -1,8 +1,7 @@
 # AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search
 # Click to play: https://nine0-days-ai-backend-reborn.onrender.com
 **An enterprise-grade RAG system with hybrid retrieval (vector + BM25) for intelligent log diagnosis using real HDFS production logs.**
-![RAG Result](screenshots/res.png)
-
+![RAG Result](screenshots/cause-oriented_RAG.png)
 *Example query result showing AI diagnosis and retrieved log evidence with similarity scores*
 
 
