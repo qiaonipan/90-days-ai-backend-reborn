@@ -16,6 +16,7 @@ This project is a **full-cycle Retrieval-Augmented Generation (RAG) system** tha
 - **Hybrid fusion** (70% vector + 30% BM25)
 - **FastAPI backend** with RESTful API
 - **Modern chat-style frontend** with accordion UI
+- **Filtering the irrelevant log from original data
 
 Users can ask **natural language questions** such as:
 
