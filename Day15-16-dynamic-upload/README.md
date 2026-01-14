@@ -11,7 +11,7 @@
 
 This project is a **full-cycle Retrieval-Augmented Generation (RAG) system** that performs **hybrid semantic search** over production logs with **dynamic file upload capabilities**. Key features:
 
-- **OpenAI text embeddings** (text-embedding-3-small)
+- **OpenAI text embeddings** (text-embedding-3-large)
 - **Oracle Autonomous Database 26ai** native vector search
 - **BM25 keyword search** for lexical matching
 - **Hybrid fusion** (70% vector + 30% BM25)
@@ -120,8 +120,23 @@ Ensure your Oracle database has the `docs` table:
 CREATE TABLE docs (
     id NUMBER PRIMARY KEY,
     text CLOB,
-    embedding VECTOR(1536, FLOAT32)
+    embedding VECTOR(3072, FLOAT32)
 );
+```
+
+**⚠️ Important**: If you're upgrading from `text-embedding-3-small` (1536 dimensions) to `text-embedding-3-large` (3072 dimensions), you need to alter the table:
+
+```sql
+-- Drop existing table and recreate (if you can lose existing data)
+DROP TABLE docs;
+CREATE TABLE docs (
+    id NUMBER PRIMARY KEY,
+    text CLOB,
+    embedding VECTOR(3072, FLOAT32)
+);
+
+-- OR alter the column (if your Oracle version supports it)
+ALTER TABLE docs MODIFY embedding VECTOR(3072, FLOAT32);
 ```
 
 ---
@@ -279,7 +294,7 @@ curl -X POST "http://localhost:8000/search" \
 │         Query Flow                       │
 │  User Query                              │
 │    ↓                                     │
-│  OpenAI Embedding (text-embedding-3-small)│
+│  OpenAI Embedding (text-embedding-3-large)│
 │    ↓                                     │
 │  ┌─────────────────────────────────────┐ │
 │  │      Hybrid Search Engine           │ │

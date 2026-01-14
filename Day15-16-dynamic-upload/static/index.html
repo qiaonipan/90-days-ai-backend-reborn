@@ -62,6 +62,24 @@
         .upload-status.error {
             color: #e91e63;
         }
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 24px;
+            background: linear-gradient(90deg, #1a73e8 0%, #4285f4 100%);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+        }
+        #progressText {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
         html {
             height: 100%;
             overflow: hidden;
@@ -500,6 +518,10 @@
         <input type="file" id="logFile" accept=".log,.txt,.gz">
         <button class="upload-btn" onclick="document.getElementById('logFile').click()">Select File</button>
         <div class="upload-status" id="uploadStatus"></div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+            <p id="progressText">Ready to upload...</p>
+        </div>
     </div>
 
     <div class="footer">
@@ -541,7 +563,16 @@ const uploadArea = document.getElementById('uploadArea');
         const file = logFileInput.files[0];
         if (!file) return;
 
-        uploadStatus.textContent = 'Uploading...';
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        
+        // Show progress container and reset
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.textContent = 'Parsing file...';
+        progressText.style.color = '#666';
+        uploadStatus.textContent = '';
         uploadStatus.className = 'upload-status';
 
         const formData = new FormData();
@@ -553,47 +584,99 @@ const uploadArea = document.getElementById('uploadArea');
                 body: formData
             });
 
-            // Try to parse response as JSON
-            let data;
-            try {
-                data = await response.json();
-            } catch (jsonErr) {
-                // If JSON parsing fails, get text response
-                const textResponse = await response.text();
-                throw new Error(`Server error (${response.status}): ${textResponse || response.statusText}`);
-            }
-
             if (!response.ok) {
-                // Server returned error response
-                const errorMsg = data.message || data.detail || `Upload failed with status ${response.status}`;
-                throw new Error(errorMsg);
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
             }
 
-            uploadStatus.textContent = data.message || 'Upload successful!';
-            uploadStatus.className = 'upload-status success';
+            // Read streaming response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-            // Add system message in chat area
-            chatMessages.innerHTML += `
-            <div class="message" style="align-self: center;">
-                <div class="message-content system-message">
-                    ✅ ${data.message || 'Upload successful! New logs loaded, ready to query.'} (${data.chunks_loaded || 0} entries)
-                </div>
-            </div>`;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            // Clear example (optional: focus on user data after upload)
-            // If you want to clear hardcoded examples, uncomment below
-            // chatMessages.innerHTML = chatMessages.innerHTML.split('<div class="message ai-message">')[0] + ... but keep it simple
-
-            // Reset input
-            logFileInput.value = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Keep incomplete line in buffer
+                
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    
+                    try {
+                        const data = JSON.parse(line);
+                        
+                        if (data.status === 'error') {
+                            progressBar.style.width = '0%';
+                            progressText.textContent = 'Upload failed: ' + (data.message || 'Unknown error');
+                            progressText.style.color = '#e91e63';
+                            uploadStatus.textContent = 'Upload failed: ' + (data.message || 'Unknown error');
+                            uploadStatus.className = 'upload-status error';
+                            
+                            // Show error in chat
+                            chatMessages.innerHTML += `
+                            <div class="message" style="align-self: center;">
+                                <div class="message-content system-message" style="background: #ffebee; color: #c62828;">
+                                    ❌ Upload failed: ${escapeHtml(data.message || 'Unknown error')}
+                                </div>
+                            </div>`;
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                            return;
+                        }
+                        
+                        if (data.status === 'complete') {
+                            progressBar.style.width = '100%';
+                            progressText.textContent = `Upload successful! Loaded ${data.chunks_loaded || 0} log entries (took ${data.processing_time_seconds || 0} seconds)`;
+                            progressText.style.color = '#4caf50';
+                            uploadStatus.textContent = 'Upload successful!';
+                            uploadStatus.className = 'upload-status success';
+                            
+                            // Add success message in chat area
+                            chatMessages.innerHTML += `
+                            <div class="message" style="align-self: center;">
+                                <div class="message-content system-message">
+                                    ✅ Upload successful! Loaded ${data.chunks_loaded || 0} log entries, ready to query.
+                                </div>
+                            </div>`;
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                            
+                            // Reset input
+                            logFileInput.value = '';
+                        } else {
+                            // Update progress
+                            progressBar.style.width = `${data.progress || 0}%`;
+                            
+                            let statusText = 'Processing...';
+                            if (data.status === 'parsing') {
+                                statusText = 'Parsing file...';
+                            } else if (data.status === 'truncating') {
+                                statusText = 'Clearing database...';
+                            } else if (data.status === 'embedding') {
+                                statusText = `Generating embeddings... Processed ${data.processed || 0}/${data.total || '?'} entries`;
+                            } else if (data.status === 'inserting') {
+                                statusText = 'Inserting into database...';
+                            } else if (data.status === 'reloading') {
+                                statusText = 'Reloading index...';
+                            }
+                            
+                            progressText.textContent = statusText;
+                        }
+                    } catch (parseErr) {
+                        console.warn('Failed to parse progress line:', line, parseErr);
+                    }
+                }
+            }
         } catch (err) {
             console.error('Upload error:', err);
             const errorMsg = err.message || 'Unknown error occurred';
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Upload failed: ' + errorMsg;
+            progressText.style.color = '#e91e63';
             uploadStatus.textContent = 'Upload failed: ' + errorMsg;
             uploadStatus.className = 'upload-status error';
             
-            // Also show error in chat area
+            // Show error in chat area
             chatMessages.innerHTML += `
             <div class="message" style="align-self: center;">
                 <div class="message-content system-message" style="background: #ffebee; color: #c62828;">
@@ -665,11 +748,13 @@ const uploadArea = document.getElementById('uploadArea');
                         }
                     });
                     let similarity = 'N/A';
-                    if (item.distance !== undefined && item.distance !== null) {
-         
-                        similarity = (1 - item.distance).toFixed(3);
-                    } else if (item.hybrid_score !== undefined && item.hybrid_score !== null) {
+                    // Prioritize hybrid_score (already normalized) over raw distance
+                    if (item.hybrid_score !== undefined && item.hybrid_score !== null) {
                         similarity = item.hybrid_score.toFixed(3);
+                    } else if (item.distance !== undefined && item.distance !== null) {
+                        // Fallback: convert distance to similarity (for text-embedding-3-small, distance typically 0-2)
+                        // Use exponential decay for better similarity representation
+                        similarity = Math.exp(-item.distance * 1.5).toFixed(3);
                     }
                     
                     const isActive = index === 0 ? 'active' : '';
