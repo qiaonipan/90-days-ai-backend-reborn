@@ -9,7 +9,11 @@
 
 ## 📌 Project Overview
 
-This project is a **full-cycle Retrieval-Augmented Generation (RAG) system** that performs **hybrid semantic search** over production logs with **dynamic file upload capabilities**. Key features:
+This project is a **production-grade anomaly diagnosis system** that helps SREs move from raw logs to **interpretable anomaly hypotheses** by combining statistical signal detection with LLM-based pattern reasoning.
+
+> **📖 For system design philosophy and problem statement, see [SYSTEM_OVERVIEW.md](./SYSTEM_OVERVIEW.md)**
+
+**Key features:**
 
 - **OpenAI text embeddings** (text-embedding-3-large)
 - **Oracle Autonomous Database 26ai** native vector search
@@ -273,6 +277,10 @@ curl -X POST "http://localhost:8000/search" \
 ---
 
 ## 🏗️ System Architecture
+
+> **📖 For detailed system design philosophy, problem statement, and technical decisions, see [SYSTEM_OVERVIEW.md](./SYSTEM_OVERVIEW.md)**
+
+The system follows a **three-stage pipeline** for production-grade anomaly diagnosis:
 
 ```
 ┌─────────────────────────────────────────┐
