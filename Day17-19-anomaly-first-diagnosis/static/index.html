@@ -20,7 +20,7 @@
         .upload-area p {
             margin: 4px 0;
             font-size: 0.9em;
-            line-height: 1.3;
+            line-height: 1.2;
         }
         .upload-area:hover {
             background: #f0f7ff;
@@ -96,7 +96,7 @@
             padding: 20px 20px 10px 20px;
             background: #f5f7fa;
             color: #333;
-            line-height: 1.6;
+            line-height: 1.4;
             height: 100vh;
             overflow: hidden;
             display: flex;
@@ -106,14 +106,14 @@
             color: #1a73e8;
             text-align: center;
             margin: 0 0 10px 0;
-            font-size: 2.0em;
+            font-size: 1.6em;
             flex-shrink: 0;
         }
         .subtitle {
             text-align: center;
             color: #666;
             margin: 0 0 20px 0;
-            font-size: 1.5em;
+            font-size: 1.2em;
             flex-shrink: 0;
         }
         .chat-container {
@@ -172,8 +172,8 @@
         .message-content {
             padding: 15px 20px;
             border-radius: 18px;
-            line-height: 1.2;
-            font-size: 1.2em;
+            line-height: 1.1;
+            font-size: 1.0em;
         }
         .user-message .message-content {
             background: #1a73e8;
@@ -289,7 +289,7 @@
         .accordion-body {
             padding: 16px;
             border-top: 1px solid #e0e0e0;
-            line-height: 1.6;
+            line-height: 1.4;
             font-family: 'Courier New', monospace;
             font-size: 0.9em;
             color: #333;
@@ -336,7 +336,7 @@
             margin-bottom: 0;
         }
         .diagnosis-section-title {
-            font-size: 1.1em;
+            font-size: 0.95em;
             font-weight: 700;
             margin-bottom: 12px;
             display: flex;
@@ -373,23 +373,23 @@
             color: #2196f3;
         }
         .diagnosis-content {
-            line-height: 1.8;
+            line-height: 1.5;
             color: #333;
             margin-left: 28px;
         }
         .diagnosis-content ul {
-            margin: 8px 0;
+            margin: 6px 0;
             padding-left: 24px;
         }
         .diagnosis-content li {
-            margin: 6px 0;
+            margin: 4px 0;
             padding-left: 8px;
         }
         .diagnosis-content p {
-            margin: 8px 0;
+            margin: 6px 0;
         }
         .diagnosis-icon {
-            font-size: 1.2em;
+            font-size: 1.0em;
         }
     </style>
 </head>
@@ -408,8 +408,9 @@
                     <p>Hello! I'm your HDFS log intelligent diagnosis assistant.</p>
                     <p>You can ask me any production questions, such as:</p>
                     <ul>
-                        <li>"What caused the block to be missing"</li>
-                        <li>"DataNode failed"</li>
+                        <li>"What caused blocks to be missing during this time window?"</li>
+                        <li>Why did the DataNode fail repeatedly in a short time span?</li>
+                        <li>Are these errors symptoms of a single root cause or multiple issues?</li>
                     </ul>
                     <p>Below is an example query.</p>
                 </div>
@@ -427,7 +428,7 @@
                 <div class="ai-avatar">🚀</div>
                 <div class="message-content">
                     <div class="diagnosis-container">
-                        <div style="font-size: 1.2em; font-weight: 700; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">
+                        <div style="font-size: 1.0em; font-weight: 700; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">
                             <span>🚀</span><span>AI Diagnosis</span>
                         </div>
                         <div class="diagnosis-section root-cause">
@@ -475,7 +476,7 @@
                             </div>
                         </div>
                     </div>
-                    <div style="font-size: 1.2em; font-weight: 700; margin-top: 24px; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">
+                    <div style="font-size: 1.0em; font-weight: 700; margin-top: 24px; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">
                         <span>📋</span><span>Retrieved Raw Log Evidence (Top 3)</span>
                     </div>
                     <div class="accordion">
@@ -743,7 +744,7 @@ const uploadArea = document.getElementById('uploadArea');
             
             // Then display logs
             if (data.retrieved_logs && data.retrieved_logs.length > 0) {
-                aiHtml += `<div style="font-size: 1.2em; font-weight: 700; margin-top: 24px; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">`;
+                aiHtml += `<div style="font-size: 1.0em; font-weight: 700; margin-top: 24px; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">`;
                 aiHtml += `<span>📋</span><span>Retrieved Raw Log Evidence (Top ${data.retrieved_logs.length})</span>`;
                 aiHtml += `</div>`;
                 data.retrieved_logs.forEach((item, index) => {
@@ -857,7 +858,7 @@ const uploadArea = document.getElementById('uploadArea');
         };
         
         let html = '<div class="diagnosis-container">';
-        html += '<div style="font-size: 1.2em; font-weight: 700; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">';
+        html += '<div style="font-size: 1.0em; font-weight: 700; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">';
         html += '<span>🚀</span><span>AI Diagnosis</span>';
         html += '</div>';
         
