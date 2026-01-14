@@ -6,16 +6,21 @@
     <title>AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search</title>
     <style>
         .upload-area {
-            max-width: 1200px;
-            width: 95%;
-            margin: 20px auto;
-            padding: 20px;
+            width: 55%;
+            max-width: 100%;
+            margin: 10px auto;
+            padding: 12px 20px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             text-align: center;
             border: 2px dashed #1a73e8;
             transition: all 0.3s;
+        }
+        .upload-area p {
+            margin: 4px 0;
+            font-size: 0.9em;
+            line-height: 1.3;
         }
         .upload-area:hover {
             background: #f0f7ff;
@@ -29,14 +34,14 @@
             display: none;
         }
         .upload-btn {
-            padding: 12px 24px;
+            padding: 8px 20px;
             background: #1a73e8;
             color: white;
             border: none;
             border-radius: 25px;
             cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
+            font-size: 14px;
+            margin-top: 5px;
         }
         .upload-btn:hover {
             background: #1557b0;
@@ -52,8 +57,8 @@
             max-width: 80%;
         }
         .upload-status {
-            margin-top: 10px;
-            font-size: 0.9em;
+            margin-top: 5px;
+            font-size: 0.85em;
             color: #666;
         }
         .upload-status.success {
@@ -86,9 +91,9 @@
         }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
+            width: 100%;
+            margin: 0;
+            padding: 20px 20px 10px 20px;
             background: #f5f7fa;
             color: #333;
             line-height: 1.6;
@@ -101,19 +106,19 @@
             color: #1a73e8;
             text-align: center;
             margin: 0 0 10px 0;
-            font-size: 1.5em;
+            font-size: 2.0em;
             flex-shrink: 0;
         }
         .subtitle {
             text-align: center;
             color: #666;
             margin: 0 0 20px 0;
-            font-size: 1.1em;
+            font-size: 1.5em;
             flex-shrink: 0;
         }
         .chat-container {
-            max-width: 1200px;
-            width: 95%;
+            max-width: 100%;
+            width: 98%;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -126,7 +131,8 @@
         
         @media (min-width: 1400px) {
             .chat-container {
-                max-width: 1400px;
+                max-width: 100%;
+                width: 98%;
             }
         }
         
@@ -149,12 +155,12 @@
         .message {
             margin-bottom: 20px;
             display: flex;
-            max-width: 85%;
+            max-width: 98%;
         }
         
         @media (min-width: 1200px) {
             .message {
-                max-width: 1000px;
+                max-width: 1300px;
             }
         }
         .user-message {
@@ -166,7 +172,8 @@
         .message-content {
             padding: 15px 20px;
             border-radius: 18px;
-            line-height: 1.6;
+            line-height: 1.2;
+            font-size: 1.2em;
         }
         .user-message .message-content {
             background: #1a73e8;
@@ -288,11 +295,14 @@
             color: #333;
         }
         .footer {
-            margin-top: 20px;
+            margin-top: 5px;
             text-align: center;
             color: #888;
             font-size: 0.9em;
             flex-shrink: 0;
+        }
+        .footer p {
+            margin: 2px 0;
         }
         .footer a {
             color: #1a73e8;
@@ -512,9 +522,7 @@
     </div>
 
     <div class="upload-area" id="uploadArea">
-        <p><strong>📤 Upload Custom Log Files for Real-Time Root Cause Diagnosis</strong></p>
-        <p>Supports .log / .txt / .gz (HDFS, Yarn, server logs, etc., max 5000 lines)</p>
-        <p>Drag and drop files here, or click to select</p>
+        <p>📤 Supports .log / .txt / .gz (HDFS, Yarn, server logs, etc., max 5000 lines)</p>
         <input type="file" id="logFile" accept=".log,.txt,.gz">
         <button class="upload-btn" onclick="document.getElementById('logFile').click()">Select File</button>
         <div class="upload-status" id="uploadStatus"></div>
