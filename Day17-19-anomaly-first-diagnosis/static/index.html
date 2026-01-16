@@ -405,10 +405,11 @@
             <div class="message ai-message">
                 <div class="ai-avatar">🚀</div>
                 <div class="message-content">
-                    <p>Hello! I'm your HDFS log intelligent diagnosis assistant.</p>
+                    <p>Hello! I'm a log-based anomaly diagnosis assistant for production systems.</p>
+                    <p>Optimized for distributed systems such as HDFS, but applicable to other production logs!</p>
                     <p>You can ask me any production questions, such as:</p>
                     <ul>
-                        <li>"What caused blocks to be missing during this time window?"</li>
+                        <li>What caused blocks to be missing during this time window?</li>
                         <li>Why did the DataNode fail repeatedly in a short time span?</li>
                         <li>Are these errors symptoms of a single root cause or multiple issues?</li>
                     </ul>
@@ -638,8 +639,8 @@ const uploadArea = document.getElementById('uploadArea');
                             progressBar.style.width = '100%';
                             progressText.textContent = `Upload successful! Loaded ${data.chunks_loaded || 0} log entries (took ${data.processing_time_seconds || 0} seconds)`;
                             progressText.style.color = '#4caf50';
-                            uploadStatus.textContent = 'Upload successful!';
-                            uploadStatus.className = 'upload-status success';
+                            uploadStatus.textContent = '';
+                            uploadStatus.className = 'upload-status';
                             
                             // Add success message in chat area
                             chatMessages.innerHTML += `
@@ -648,6 +649,36 @@ const uploadArea = document.getElementById('uploadArea');
                                     ✅ Upload successful! Loaded ${data.chunks_loaded || 0} log entries, ready to query.
                                 </div>
                             </div>`;
+                            
+                            // Display preliminary summary if available (facts only, no conclusions)
+                            if (data.preliminary_summary) {
+                                const summaryLines = data.preliminary_summary.split('\n').filter(line => line.trim());
+                                let summaryHtml = '<div class="message ai-message">';
+                                summaryHtml += '<div class="ai-avatar">📊</div>';
+                                summaryHtml += '<div class="message-content">';
+                                summaryHtml += '<div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 3px solid #1a73e8;">';
+                                
+                                // Check if first line is title
+                                let isFirstLine = true;
+                                summaryLines.forEach(line => {
+                                    const trimmedLine = line.trim();
+                                    if (isFirstLine && trimmedLine === 'Preliminary Diagnosis Summary') {
+                                        summaryHtml += `<p style="margin: 0 0 8px 0; font-size: 1.0em; font-weight: 700; color: #1a73e8;">${escapeHtml(trimmedLine)}</p>`;
+                                        isFirstLine = false;
+                                    } else if (trimmedLine.startsWith('•')) {
+                                        // Line already has bullet point
+                                        summaryHtml += `<p style="margin: 4px 0; font-size: 0.95em; line-height: 1.4; display: block;">${escapeHtml(trimmedLine)}</p>`;
+                                    } else {
+                                        // Add bullet point if missing
+                                        summaryHtml += `<p style="margin: 4px 0; font-size: 0.95em; line-height: 1.4; display: block;">• ${escapeHtml(trimmedLine)}</p>`;
+                                    }
+                                });
+                                summaryHtml += '</div>';
+                                summaryHtml += '</div>';
+                                summaryHtml += '</div>';
+                                chatMessages.innerHTML += summaryHtml;
+                            }
+                            
                             chatMessages.scrollTop = chatMessages.scrollHeight;
                             
                             // Reset input
@@ -667,6 +698,8 @@ const uploadArea = document.getElementById('uploadArea');
                                 statusText = 'Inserting into database...';
                             } else if (data.status === 'reloading') {
                                 statusText = 'Reloading index...';
+                            } else if (data.status === 'generating_summary') {
+                                statusText = 'Generating preliminary summary...';
                             }
                             
                             progressText.textContent = statusText;
@@ -838,7 +871,14 @@ const uploadArea = document.getElementById('uploadArea');
         text = text.replace(/__/g, '');
         
         // Trim each line but preserve line breaks
-        text = text.split('\n').map(line => line.trim()).join('\n');
+        text = text.split('\n').map(line => {
+            line = line.trim();
+            // Remove standalone numbered items (like "2." "3." "4.") that are not part of a list
+            if (/^\d+\.\s*$/.test(line)) {
+                return '';
+            }
+            return line;
+        }).filter(line => line).join('\n');
         
         return text;
     }
@@ -906,6 +946,10 @@ const uploadArea = document.getElementById('uploadArea');
                         if (inList) {
                             processedLines.push('</ul>');
                             inList = false;
+                        }
+                        // Skip standalone numbered items (like "2." "3." "4.") that are not part of a list
+                        if (/^\d+\.\s*$/.test(line)) {
+                            continue;
                         }
                         line = cleanMarkdown(line);
                         processedLines.push('<p>' + escapeHtml(line) + '</p>');

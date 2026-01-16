@@ -1120,17 +1120,78 @@ async def upload_logs(file: UploadFile = File(...)):
             reload_bm25()
             print("BM25 index reloaded successfully")
             
+            # Step 7: Generate preliminary summary
+            yield '{"status": "generating_summary", "progress": 98}\n'
+            
+            # Calculate factual patterns based on anomaly_signals + simple statistics
+            summary_lines = []
+            
+            if anomaly_signals and len(anomaly_signals) > 0:
+                summary_lines.append(f"{len(anomaly_signals)} high-confidence anomaly window(s) detected")
+                
+                # Extract top components from error logs in anomaly windows
+                component_counter = Counter()
+                template_counter = Counter()
+                
+                for signal in anomaly_signals:
+                    # Get templates from signal
+                    if 'templates' in signal:
+                        for template_id, count in signal['templates'].items():
+                            template_counter[template_id] += count
+                    
+                    # Extract components from logs matching the signature
+                    # Parse component from signature or search in log_entries
+                    signature = signal.get('signature', '')
+                    # Try to extract component from signature (HDFS format)
+                    sig_match = re.search(r'(\w+):\s+', signature)
+                    if sig_match:
+                        component_counter[sig_match.group(1)] += signal.get('count', 0)
+                
+                # Get top components
+                if component_counter:
+                    top_components = ', '.join([comp for comp, _ in component_counter.most_common(3)])
+                    summary_lines.append(f"Errors concentrated on component(s): {top_components}")
+                else:
+                    # Fallback: parse components from all error logs
+                    error_components = []
+                    for line in log_entries:
+                        match = re.match(r'^(\d{6})\s+(\d{6})\s+\d+\s+(ERROR|FATAL)\s+(\w+):', line)
+                        if match:
+                            error_components.append(match.group(4))
+                    if error_components:
+                        top_components = ', '.join([comp for comp, _ in Counter(error_components).most_common(3)])
+                        summary_lines.append(f"Errors concentrated on component(s): {top_components}")
+                
+                # Get top templates
+                if template_counter:
+                    top_templates = ', '.join([f"T{str(tid)[:6]}" for tid, _ in template_counter.most_common(3)])
+                    summary_lines.append(f"Repeated patterns: {top_templates}")
+                else:
+                    # Fallback: use template_id from signals
+                    template_ids = [sig.get('template_id', '') for sig in anomaly_signals if sig.get('template_id')]
+                    if template_ids:
+                        top_templates = ', '.join([f"T{str(tid)[:6]}" for tid in template_ids[:3]])
+                        summary_lines.append(f"Repeated patterns: {top_templates}")
+            else:
+                summary_lines.append("Log analysis complete.")
+                summary_lines.append("No system-level anomaly windows were detected across the uploaded logs.")
+                summary_lines.append("The system is ready to analyze specific patterns or questions you want to investigate.")
+            
+            # Format summary with bullet points
+            preliminary_summary = "Preliminary Diagnosis Summary\n" + "\n".join(f"• {line}" for line in summary_lines)
+            
             end_time = time.time()
             total_time = end_time - start_time
             print(f"Processing complete! Total time: {total_time:.1f} seconds")
             
-            # Final success message with anomaly signals count
+            # Final success message with anomaly signals count and preliminary summary
             yield json.dumps({
                 "status": "complete",
                 "progress": 100,
                 "chunks_loaded": len(log_entries),
                 "processing_time_seconds": round(total_time, 1),
                 "anomaly_signals_count": anomaly_count,
+                "preliminary_summary": preliminary_summary,
                 "message": f"Upload successful! Loaded {len(log_entries)} log entries. Detected {anomaly_count} anomaly signals."
             }) + '\n'
             
