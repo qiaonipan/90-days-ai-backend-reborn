@@ -18,6 +18,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import asyncio
 import pandas as pd
+from drain3 import TemplateMiner
+from drain3.template_miner_config import TemplateMinerConfig
 
 upload_progress = {"total": 0, "processed": 0, "status": "idle", "start_time": None}
 
@@ -138,54 +140,109 @@ def extract_anomaly_signals(log_entries):
     Returns list of top-3 anomaly windows with templates and scores.
     """
     try:
-        # Parse logs into DataFrame
-        # HDFS format: YYMMDD HHMMSS <number> <LEVEL> <component>: <message>
+        # Initialize Drain3 template miner
+        config = TemplateMinerConfig()
+        config.drain_depth = 4
+        config.drain_sim_th = 0.5
+        config.drain_max_children = 100
+        config.masking = [
+            r'blk_-?\d+',  # Block IDs
+            r'\d+\.\d+\.\d+\.\d+',  # IP addresses
+            r'/\S+',  # File paths
+            r'\d+',  # Numbers
+        ]
+        template_miner = TemplateMiner(config=config)
+        
+        # Parse logs into DataFrame and extract templates using Drain3
+        # Support multiple log formats: HDFS, nginx, generic
         parsed_logs = []
+        hdfs_format_count = 0
+        
         for line in log_entries:
-            # Match HDFS log format
+            ts = None
+            level = None
+            component = None
+            message = line  # Default: use entire line as message
+            
+            # Try HDFS format first: YYMMDD HHMMSS <number> <LEVEL> <component>: <message>
             match = re.match(r'^(\d{6})\s+(\d{6})\s+\d+\s+(\w+)\s+(.+?):\s+(.+)$', line)
             if match:
                 date_str, time_str, level, component, message = match.groups()
+                hdfs_format_count += 1
                 # Convert to datetime (YYMMDD HHMMSS)
                 try:
                     ts = pd.to_datetime(f"20{date_str} {time_str}", format='%Y%m%d %H%M%S')
                 except:
-                    ts = pd.Timestamp.now()  # Fallback
-                parsed_logs.append({
-                    'ts': ts,
-                    'level': level,
-                    'component': component,
-                    'message': message,
-                    'raw': line
-                })
+                    ts = None
+            else:
+                # Try to extract timestamp from common formats
+                # Nginx/Apache format: [DD/MMM/YYYY:HH:MM:SS +TZ]
+                nginx_match = re.search(r'\[(\d{2}/\w{3}/\d{4}):(\d{2}:\d{2}:\d{2})', line)
+                if nginx_match:
+                    date_str, time_str = nginx_match.groups()
+                    try:
+                        ts = pd.to_datetime(f"{date_str} {time_str}", format='%d/%b/%Y %H:%M:%S')
+                    except:
+                        ts = None
+                
+                # Try ISO format: YYYY-MM-DD HH:MM:SS
+                iso_match = re.search(r'(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2})', line)
+                if iso_match and ts is None:
+                    try:
+                        ts = pd.to_datetime(iso_match.group(1))
+                    except:
+                        ts = None
+                
+                # Extract level from common patterns (ERROR, WARN, INFO, etc.)
+                level_match = re.search(r'\b(ERROR|WARN|INFO|DEBUG|FATAL|CRITICAL)\b', line, re.IGNORECASE)
+                if level_match:
+                    level = level_match.group(1).upper()
+            
+            # Use Drain3 to parse log and extract template
+            result = template_miner.add_log_message(line)
+            cluster_id = result['cluster_id']
+            event_template = result['template_mined'] if result['template_mined'] else line
+            
+            # Use current time if no timestamp found
+            if ts is None:
+                ts = pd.Timestamp.now()
+            
+            parsed_logs.append({
+                'ts': ts,
+                'level': level or 'UNKNOWN',
+                'component': component or 'UNKNOWN',
+                'message': message,
+                'raw': line,
+                'event_id': cluster_id,
+                'event_template': event_template
+            })
+        
+        print(f"Parsed {len(parsed_logs)} logs (HDFS format: {hdfs_format_count}, other formats: {len(parsed_logs) - hdfs_format_count})")
         
         if len(parsed_logs) < 10:
+            print(f"Warning: Only {len(parsed_logs)} logs parsed, need at least 10 for analysis")
             return []  # Not enough logs for analysis
         
         df = pd.DataFrame(parsed_logs)
         df['ts'] = pd.to_datetime(df['ts'])
         df = df.sort_values('ts')
         
-        # Extract templates using simplified pattern matching
-        # Replace numbers, IPs, IDs with placeholders to create templates
-        def extract_template(message):
-            # Replace numbers with <NUM>
-            template = re.sub(r'\d+', '<NUM>', message)
-            # Replace IP addresses with <IP>
-            template = re.sub(r'\d+\.\d+\.\d+\.\d+', '<IP>', template)
-            # Replace block IDs (blk_...) with <BLOCK_ID>
-            template = re.sub(r'blk_[-\w]+', '<BLOCK_ID>', template)
-            # Replace file paths with <PATH>
-            template = re.sub(r'/[^\s]+', '<PATH>', template)
-            return template
+        # Use Drain's EventId as template_id, and EventTemplate as signature
+        # Convert EventId to string format for consistency
+        df['template_id'] = df['event_id'].apply(lambda x: f"T{x}" if x is not None else "T0")
+        df['template'] = df['event_template']
         
-        df['template'] = df['message'].apply(extract_template)
-        # Create template_id from hash of template
-        df['template_id'] = df['template'].apply(lambda x: f"T{abs(hash(x)) % 100000}")
+        # Filter error logs: ERROR, FATAL, CRITICAL, or containing error keywords (404, 500, Exception, error, fail)
+        # Also check HTTP status codes (4xx, 5xx) and common error patterns
+        df['is_error'] = (
+            df['level'].isin(['ERROR', 'FATAL', 'CRITICAL']) | 
+            df['message'].str.contains('ERROR|FATAL|Exception|error|fail|failed|failure', case=False, na=False, regex=True) |
+            df['raw'].str.contains(r'\b(4\d{2}|5\d{2})\b', na=False, regex=True) |  # HTTP 4xx/5xx
+            df['raw'].str.contains(r'\b(404|500|502|503|504)\b', na=False, regex=True)  # Common HTTP errors
+        )
         
-        # Filter error logs: ERROR, FATAL, or containing error keywords (404, 500, Exception)
-        # More efficient: check level and message directly
-        df['is_error'] = df['level'].isin(['ERROR', 'FATAL']) | df['message'].str.contains('ERROR|FATAL|Exception| 404 | 500 ', case=False, na=False, regex=True)
+        error_count = df['is_error'].sum()
+        print(f"Detected {error_count} error logs out of {len(df)} total logs")
         
         # Set ts as index for resampling
         df_indexed = df.set_index('ts')
@@ -219,6 +276,9 @@ def extract_anomaly_signals(log_entries):
         # Get top-3 most suspicious windows
         top_windows = suspicious_windows[:3] if len(suspicious_windows) >= 3 else suspicious_windows
         
+        print(f"Found {len(suspicious_windows)} suspicious windows, returning top {len(top_windows)}")
+        print(f"Error rate stats: min={error_rate.min():.4f}, max={error_rate.max():.4f}, mean={error_rate.mean():.4f}")
+        
         # Extract templates for each suspicious window
         results = []
         for window_start in top_windows:
@@ -247,9 +307,11 @@ def extract_anomaly_signals(log_entries):
             anomaly_score = (error_count_score * 0.8) + (volume_spike_score * 0.2)
             
             # Get top template signature (from error logs only)
+            # Use Drain's event template as signature
             top_template_id = template_counts.index[0] if len(template_counts) > 0 else "UNKNOWN"
             top_template_logs = error_window_logs[error_window_logs['template_id'] == top_template_id]
-            signature = top_template_logs['message'].iloc[0] if len(top_template_logs) > 0 else ""
+            # Use Drain's event_template as signature instead of raw message
+            signature = top_template_logs['template'].iloc[0] if len(top_template_logs) > 0 else ""
             
             results.append({
                 "window_start": window_start.isoformat(),
@@ -259,6 +321,17 @@ def extract_anomaly_signals(log_entries):
                 "score": round(anomaly_score, 4),
                 "templates": {str(k): int(v) for k, v in template_counts.head(5).items()}
             })
+        
+        if len(results) == 0:
+            print("=" * 60)
+            print("No anomaly signals detected. Diagnostic info:")
+            print(f"  - Total logs parsed: {len(parsed_logs)}")
+            print(f"  - Error logs found: {error_count}")
+            print(f"  - Suspicious windows detected: {len(suspicious_windows)}")
+            if len(error_counts) > 0:
+                print(f"  - Max errors in a window: {error_counts.max()}")
+                print(f"  - Total error windows: {len(error_counts[error_counts > 0])}")
+            print("=" * 60)
         
         return results
         
@@ -707,7 +780,24 @@ Do not cite individual log lines. Focus on summarizing the overall patterns from
         
         # Validate and extract fields
         pattern_summary = diagnosis_json.get('pattern_summary', {})
-        root_cause = diagnosis_json.get('root_cause', 'Analysis completed')
+        root_cause_raw = diagnosis_json.get('root_cause', 'Analysis completed')
+        
+        # Add scope limitation prefix to root_cause
+        # Determine log type from context to use appropriate prefix
+        is_access_log = any('access' in str(log.get('text', '')).lower() or 'nginx' in str(log.get('text', '')).lower() 
+                           for log in log_subset[:10])
+        
+        if is_access_log:
+            scope_prefix = "From access logs alone, "
+        else:
+            scope_prefix = "Based on the available logs alone, "
+        
+        # Add prefix if root_cause doesn't already start with a scope limitation
+        if root_cause_raw and not (root_cause_raw.startswith('Based on') or root_cause_raw.startswith('From')):
+            root_cause = scope_prefix + root_cause_raw[0].lower() + root_cause_raw[1:] if len(root_cause_raw) > 0 else root_cause_raw
+        else:
+            root_cause = root_cause_raw
+        
         confidence = float(diagnosis_json.get('confidence', 0.5))
         confidence = max(0.0, min(1.0, confidence))  # Clamp to 0-1
         evidence = diagnosis_json.get('evidence', [])
@@ -1202,3 +1292,10 @@ async def upload_logs(file: UploadFile = File(...)):
             yield f'{{"status": "error", "message": "Upload failed: {error_msg}", "progress": 0}}\n'
     
     return StreamingResponse(progress_generator(), media_type="text/event-stream")
+
+# =========================
+# Application entry point
+# =========================
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)

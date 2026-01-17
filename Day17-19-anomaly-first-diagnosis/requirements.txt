@@ -8,3 +8,4 @@ pydantic
 rank-bm25
 python-multipart
 pandas
+drain3
