@@ -1,3 +1,4 @@
+# Day20-25 Goal: Fine-tune the embedding model to optimize the semantic retrieval performance for log anomaly diagnosis.
 # AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search with Dynamic Upload
 
 > **An enterprise-grade RAG system with hybrid retrieval (vector + BM25) for intelligent log diagnosis. Features dynamic file upload, real-time progress tracking, and batch processing optimization.**
