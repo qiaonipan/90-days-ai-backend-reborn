@@ -161,7 +161,7 @@ async def upload_logs(
                 if ts_match:
                     try:
                         ts = pd.to_datetime(f"20{ts_match.group(1)} {ts_match.group(2)}", format='%Y%m%d %H%M%S')
-                    except:
+                    except (ValueError, TypeError):
                         ts = None
                 data.append((text, vec, ts))
             

@@ -1,12 +1,36 @@
 """
 FastAPI application main module
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, Response
 from api.routes import search, diagnose, upload
 from database.connection import init_tables, db_pool
 from utils.logging_config import logger
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
+    # Startup
+    try:
+        db_pool.initialize()
+        init_tables()
+        logger.info("Application started successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize application: {e}", exc_info=True)
+        raise
+    
+    yield
+    
+    # Shutdown
+    try:
+        db_pool.close()
+        logger.info("Application shutdown complete")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}", exc_info=True)
+
 
 app = FastAPI(
     title="Oracle 26ai Cloud Vector Semantic Search API (RAG + Hybrid Search)",
@@ -21,6 +45,7 @@ app = FastAPI(
     • Dynamic log analysis and diagnosis
     """,
     version="2.0.0 (Refactored Architecture)",
+    lifespan=lifespan,
 )
 
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
@@ -28,28 +53,6 @@ app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 app.include_router(search.router)
 app.include_router(diagnose.router)
 app.include_router(upload.router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup"""
-    try:
-        db_pool.initialize()
-        init_tables()
-        logger.info("Application started successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize application: {e}", exc_info=True)
-        raise
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    try:
-        db_pool.close()
-        logger.info("Application shutdown complete")
-    except Exception as e:
-        logger.error(f"Error during shutdown: {e}", exc_info=True)
 
 
 @app.get("/", tags=["Frontend"])
