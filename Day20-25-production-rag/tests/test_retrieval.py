@@ -2,9 +2,10 @@
 Retrieval and search unit tests
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 import sys
 from pathlib import Path
+from services.retrieval import RetrievalService
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -15,9 +16,6 @@ class TestCandidateRetrieval:
     
     def test_retrieve_candidates_empty_signals(self):
         """Test retrieval with empty signals"""
-        from services.retrieval import RetrievalService
-        from unittest.mock import MagicMock
-        
         mock_client = MagicMock()
         service = RetrievalService(mock_client)
         
