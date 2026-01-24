@@ -12,7 +12,6 @@ from services.diagnosis import DiagnosisService
 from services.retrieval import RetrievalService
 from services.signal_detection import SignalDetectionService
 from database.connection import db_pool
-import pandas as pd
 from utils.logging_config import logger
 
 router = APIRouter(prefix="/diagnose", tags=["Diagnosis"])
