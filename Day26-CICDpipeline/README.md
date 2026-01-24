@@ -24,7 +24,8 @@ This project is a **production-grade anomaly diagnosis system** that helps SREs 
 - **Batch processing optimization** - Efficient batch embedding generation (1000 entries per batch)
 - **FastAPI backend** with RESTful API
 - **Modern chat-style frontend** with accordion UI
-
+- **CI/CD pipeline** with lint and tests
+  
 Users can:
 1. **Upload custom log files** (.log, .txt, .gz) up to 5000 entries
 2. **Monitor real-time progress** during processing
