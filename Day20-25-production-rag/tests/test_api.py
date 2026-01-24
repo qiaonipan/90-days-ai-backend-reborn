@@ -2,9 +2,7 @@
 API endpoint tests
 """
 import pytest
-import json
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.api
