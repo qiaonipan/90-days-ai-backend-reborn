@@ -18,6 +18,16 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
+        pip install ruff black pytest
+
+    - name: Lint with ruff
+      run: ruff check .
+
+    - name: Check formatting with black
+      run: black --check .
+
+    - name: Run tests
+      run: pytest tests/
 
     - name: Trigger Render Deploy
       run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
