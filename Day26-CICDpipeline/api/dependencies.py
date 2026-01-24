@@ -1,6 +1,7 @@
 """
 FastAPI dependencies for dependency injection
 """
+
 from functools import lru_cache
 from openai import OpenAI
 from services.retrieval import RetrievalService

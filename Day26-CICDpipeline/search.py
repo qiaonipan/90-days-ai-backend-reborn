@@ -9,7 +9,7 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 username = os.getenv("ORACLE_USERNAME")
 password = os.getenv("ORACLE_PASSWORD")
-dsn = os.getenv("ORACLE_DSN")                  # required
+dsn = os.getenv("ORACLE_DSN")  # required
 wallet_path = os.getenv("ORACLE_WALLET_PATH")
 
 # Connect to database
@@ -19,51 +19,55 @@ connection = oracledb.connect(
     dsn=dsn,
     config_dir=wallet_path,
     wallet_location=wallet_path,
-    wallet_password=password
+    wallet_password=password,
 )
 cursor = connection.cursor()
+
 
 def oracle_vector_search(query, title, top_k=3):
     print(f"\n📋 {title}")
     print(f"🔍 Query: {query}\n📌 Top {top_k} most relevant results:")
 
     # Generate query embedding
-    query_embedding_list = openai.embeddings.create(
-        model="text-embedding-3-small",
-        input=query
-    ).data[0].embedding
+    query_embedding_list = (
+        openai.embeddings.create(model="text-embedding-3-small", input=query)
+        .data[0]
+        .embedding
+    )
 
     # Convert to the format Oracle prefers
-    query_embedding = array.array('f', query_embedding_list)
+    query_embedding = array.array("f", query_embedding_list)
 
     # Query database
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT text, VECTOR_DISTANCE(embedding, :query_vec) AS distance
         FROM docs
         ORDER BY distance ASC
         FETCH FIRST :top_k ROWS ONLY
-    """, query_vec=query_embedding, top_k=top_k)
+    """,
+        query_vec=query_embedding,
+        top_k=top_k,
+    )
 
     results = cursor.fetchall()
     for i, (text, distance) in enumerate(results, 1):
-        similarity = 1 - distance / 2   # rough conversion to similarity
+        similarity = 1 - distance / 2  # rough conversion to similarity
         print(f"{i}. {text}")
         print(f"   (similarity ≈ {similarity:.3f}, distance = {distance:.4f})")
 
+
 # ---------- Run example searches ----------
 oracle_vector_search(
-    "What caused the block to be missing?",
-    "HDFS Block Missing Search"
+    "What caused the block to be missing?", "HDFS Block Missing Search"
 )
 
 oracle_vector_search(
-    "Why did the DataNode stop responding?",
-    "DataNode Response Issue Search"
+    "Why did the DataNode stop responding?", "DataNode Response Issue Search"
 )
 
 oracle_vector_search(
-    "PacketResponder terminating",
-    "PacketResponder Termination Search"
+    "PacketResponder terminating", "PacketResponder Termination Search"
 )
 
 # ---------- Close connection after all searches complete ----------

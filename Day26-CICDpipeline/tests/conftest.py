@@ -1,6 +1,7 @@
 """
 Pytest configuration and shared fixtures
 """
+
 import os
 import pytest
 import tempfile
@@ -29,7 +30,7 @@ _global_mock_pool.acquire.return_value = _global_mock_conn
 _global_mock_pool.release = MagicMock()
 
 # Patch oracledb.create_pool BEFORE importing api module
-_patcher = patch('oracledb.create_pool', return_value=_global_mock_pool)
+_patcher = patch("oracledb.create_pool", return_value=_global_mock_pool)
 _patcher.start()
 
 # Now safe to import api (database connection is mocked)
@@ -55,14 +56,14 @@ def mock_db_connection():
 def mock_openai_client():
     """Mock OpenAI client"""
     mock_client = MagicMock()
-    
+
     # Mock embedding response
     mock_embedding_response = MagicMock()
     mock_embedding_data = MagicMock()
     mock_embedding_data.embedding = [0.1] * 3072  # text-embedding-3-large dimension
     mock_embedding_response.data = [mock_embedding_data]
     mock_client.embeddings.create.return_value = mock_embedding_response
-    
+
     # Mock chat completion response
     mock_chat_response = MagicMock()
     mock_message = MagicMock()
@@ -71,7 +72,7 @@ def mock_openai_client():
     mock_choice.message = mock_message
     mock_chat_response.choices = [mock_choice]
     mock_client.chat.completions.create.return_value = mock_chat_response
-    
+
     return mock_client
 
 
@@ -83,7 +84,7 @@ def sample_log_entries():
         "081110 145404 35 ERROR dfs.DataNode$PacketResponder: Exception in PacketResponder 0 for block blk_-1608999687919862906",
         "081110 145405 36 INFO dfs.DataNode$PacketResponder: PacketResponder 1 for block blk_-1608999687919862907 terminating",
         "081110 145406 37 WARN dfs.DataNode$DataXceiver: DataXceiver error processing WRITE_BLOCK operation",
-        "081110 145407 38 ERROR dfs.DataNode$DataXceiver: Exception in DataXceiver for block blk_-1608999687919862908"
+        "081110 145407 38 ERROR dfs.DataNode$DataXceiver: Exception in DataXceiver for block blk_-1608999687919862908",
     ]
 
 
@@ -109,23 +110,25 @@ def reset_db_pool():
 def app_with_mocks(mock_db_connection, mock_openai_client):
     """Create FastAPI app with mocked dependencies"""
     mock_conn, mock_cursor = mock_db_connection
-    
+
     # Clear lru_cache before setting up
     from api.dependencies import get_openai_client, get_retrieval_service
+
     get_openai_client.cache_clear()
-    
+
     # Create a new RetrievalService with mocked client to avoid real API calls
     from services.retrieval import RetrievalService
+
     mock_retrieval_service = RetrievalService(mock_openai_client)
     # Mock reload_bm25 to avoid database calls
     mock_retrieval_service.reload_bm25 = lambda: None
-    
+
     # Use FastAPI dependency_overrides instead of patch
     app.dependency_overrides[get_openai_client] = lambda: mock_openai_client
     app.dependency_overrides[get_retrieval_service] = lambda: mock_retrieval_service
-    
+
     yield app
-    
+
     # Clean up after test
     app.dependency_overrides.clear()
     get_openai_client.cache_clear()
@@ -150,7 +153,7 @@ def empty_db_cursor(mock_db_connection):
 def populated_db_cursor(mock_db_connection, sample_log_entries):
     """Mock cursor with sample data"""
     _, mock_cursor = mock_db_connection
-    
+
     # Mock fetchall for docs table
     mock_docs = [
         (1, sample_log_entries[0], None),
@@ -158,8 +161,8 @@ def populated_db_cursor(mock_db_connection, sample_log_entries):
         (3, sample_log_entries[2], None),
     ]
     mock_cursor.fetchall.return_value = mock_docs
-    
+
     # Mock fetchone for COUNT queries
     mock_cursor.fetchone.return_value = (len(mock_docs),)
-    
+
     return mock_cursor

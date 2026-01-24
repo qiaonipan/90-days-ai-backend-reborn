@@ -1,6 +1,7 @@
 """
 FastAPI application main module
 """
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -21,9 +22,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize application: {e}", exc_info=True)
         raise
-    
+
     yield
-    
+
     # Shutdown
     try:
         db_pool.close()
@@ -83,4 +84,5 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("api.main:app", host="127.0.0.1", port=8000, reload=True)
