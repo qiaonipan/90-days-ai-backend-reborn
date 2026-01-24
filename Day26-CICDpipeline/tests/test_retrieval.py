@@ -16,7 +16,6 @@ class TestCandidateRetrieval:
     def test_retrieve_candidates_empty_signals(self):
         """Test retrieval with empty signals"""
         from services.retrieval import RetrievalService
-        from unittest.mock import MagicMock
         
         mock_client = MagicMock()
         service = RetrievalService(mock_client)

@@ -2,7 +2,6 @@
 评估指标计算模块
 """
 from typing import List, Dict, Any
-from collections import Counter
 
 
 def calculate_signal_detection_accuracy(
@@ -229,32 +228,32 @@ def generate_evaluation_summary(metrics: Dict[str, Any]) -> str:
     
     if "signal_detection" in metrics:
         sd = metrics["signal_detection"]
-        summary_lines.append(f"\n📊 Signal Detection:")
+        summary_lines.append("\n📊 Signal Detection:")
         summary_lines.append(f"  - Precision: {sd.get('precision', 0):.2%}")
         summary_lines.append(f"  - Recall: {sd.get('recall', 0):.2%}")
         summary_lines.append(f"  - F1-Score: {sd.get('f1', 0):.2%}")
     
     if "noise_reduction" in metrics:
         nr = metrics["noise_reduction"]
-        summary_lines.append(f"\n🔇 Noise Reduction:")
+        summary_lines.append("\n🔇 Noise Reduction:")
         summary_lines.append(f"  - Reduction Rate: {nr.get('noise_reduction_rate', 0):.2f}%")
         summary_lines.append(f"  - Filtered: {nr.get('filtered_logs', 0)}/{nr.get('total_logs', 0)} logs")
     
     if "cost_efficiency" in metrics:
         ce = metrics["cost_efficiency"]
-        summary_lines.append(f"\n💰 Cost Efficiency:")
+        summary_lines.append("\n💰 Cost Efficiency:")
         summary_lines.append(f"  - Cost Reduction: {ce.get('cost_reduction_percent', 0):.2f}%")
         summary_lines.append(f"  - Tokens Used: {ce.get('llm_tokens_used', 0)}")
     
     if "root_cause" in metrics:
         rc = metrics["root_cause"]
-        summary_lines.append(f"\n🎯 Root Cause Diagnosis:")
+        summary_lines.append("\n🎯 Root Cause Diagnosis:")
         summary_lines.append(f"  - Keyword Overlap: {rc.get('keyword_overlap', 0):.2%}")
         summary_lines.append(f"  - Jaccard Similarity: {rc.get('jaccard_similarity', 0):.2%}")
     
     if "processing_time" in metrics:
         pt = metrics["processing_time"]
-        summary_lines.append(f"\n⏱️  Processing Time:")
+        summary_lines.append("\n⏱️  Processing Time:")
         summary_lines.append(f"  - Total: {pt.get('total_time', 0):.3f}s")
         summary_lines.append(f"  - Signal Detection: {pt.get('signal_detection_time', 0):.3f}s ({pt.get('signal_detection_percent', 0):.1f}%)")
         summary_lines.append(f"  - RAG Diagnosis: {pt.get('rag_diagnosis_time', 0):.3f}s ({pt.get('rag_diagnosis_percent', 0):.1f}%)")
