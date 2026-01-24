@@ -2,8 +2,6 @@
 Signal detection unit tests
 """
 import pytest
-import pandas as pd
-from unittest.mock import patch, MagicMock
 import sys
 from pathlib import Path
 
