@@ -10,6 +10,7 @@ rank-bm25
 python-multipart
 pandas
 drain3
+sentence-transformers
 
 # Testing dependencies
 pytest>=7.4.0

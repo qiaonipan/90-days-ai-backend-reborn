@@ -75,20 +75,23 @@ class TestSearchEndpoint:
         mock_retrieval = RetrievalService(mock_openai_client)
         mock_retrieval.reload_bm25 = lambda: None
 
-        # Mock hybrid_search to return test data
-        mock_retrieval.hybrid_search = lambda query, top_k: {
+        # Mock hybrid_search to return test data (compatible with use_rerank parameter)
+        mock_retrieval.hybrid_search = lambda query, top_k, use_rerank=True: {
             "retrieved_logs": [
                 {
+                    "rank": 1,
                     "text": "081110 145404 34 INFO dfs.DataNode$PacketResponder: PacketResponder 0",
                     "hybrid_score": 0.9,
                     "distance": 0.1,
                 },
                 {
+                    "rank": 2,
                     "text": "081110 145404 35 ERROR dfs.DataNode$PacketResponder: Exception",
                     "hybrid_score": 0.8,
                     "distance": 0.2,
                 },
-            ]
+            ],
+            "distances": [0.1, 0.2],
         }
 
         # Override dependencies

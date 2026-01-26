@@ -19,7 +19,7 @@ def hybrid_search(
     retrieval_service: RetrievalService = Depends(get_retrieval_service),
     openai_client: OpenAI = Depends(get_openai_client),
 ):
-    """Perform hybrid search combining vector and BM25"""
+    """Perform hybrid search combining vector, BM25, and reranking"""
     try:
         search_results = retrieval_service.hybrid_search(request.query, request.top_k)
 
@@ -31,8 +31,11 @@ def hybrid_search(
             }
 
         retrieved_logs = search_results["retrieved_logs"]
-
-        context = "\n\n".join(log["text"] for log in retrieved_logs)
+        
+        # Use top 10 for LLM context (reranked results), but return all requested top_k to user
+        context_logs = retrieved_logs[:10]
+        context = "\n\n".join(log["text"] for log in context_logs)
+        
         prompt = f"""Analyze the following log entries to diagnose the issue described in the user's question.
 
 User question: {request.query}
@@ -55,12 +58,20 @@ Format your response clearly and concisely."""
         )
 
         summary = completion.choices[0].message.content.strip()
+        
+        # Check if reranking was used (rerank_score present in results)
+        has_rerank = any("rerank_score" in log for log in retrieved_logs)
+        note = (
+            "Results from hybrid retrieval (vector 70% + BM25 30%) with CrossEncoder reranking"
+            if has_rerank
+            else "Results from hybrid retrieval (vector 70% + BM25 30%)"
+        )
 
         return {
             "query": request.query,
             "ai_summary": summary,
             "retrieved_logs": retrieved_logs,
-            "note": "Results from hybrid retrieval (vector 70% + BM25 30%)",
+            "note": note,
         }
     except Exception as e:
         logger.error(f"Error in hybrid search: {e}", exc_info=True)

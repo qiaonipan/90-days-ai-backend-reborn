@@ -9,6 +9,7 @@ from fastapi.responses import RedirectResponse, Response
 from api.routes import search, diagnose, upload
 from database.connection import init_tables, db_pool
 from utils.logging_config import logger
+from services.reranker import RerankerService
 
 
 @asynccontextmanager
@@ -18,6 +19,8 @@ async def lifespan(app: FastAPI):
     try:
         db_pool.initialize()
         init_tables()
+        # Warmup reranker model to avoid cold start delay
+        RerankerService.warmup()
         logger.info("Application started successfully")
     except Exception as e:
         logger.error(f"Failed to initialize application: {e}", exc_info=True)

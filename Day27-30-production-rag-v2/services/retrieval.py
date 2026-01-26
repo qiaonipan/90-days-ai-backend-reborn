@@ -6,11 +6,12 @@ import array
 import math
 import re
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from rank_bm25 import BM25Okapi
 from database.connection import db_pool
 from config import settings
 from utils.logging_config import logger
+from services.reranker import RerankerService
 
 
 class RetrievalService:
@@ -142,9 +143,24 @@ class RetrievalService:
 
         return unique_candidates[:300]
 
-    def hybrid_search(self, query: str, top_k: int) -> Dict[str, Any]:
-        """Perform hybrid search combining vector and BM25"""
+    def hybrid_search(
+        self, query: str, top_k: int, use_rerank: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Perform hybrid search combining vector and BM25, with optional reranking
+        
+        Args:
+            query: User query string
+            top_k: Number of results to return
+            use_rerank: Whether to use reranking (default: True)
+        
+        Returns:
+            Dict with retrieved_logs and distances
+        """
         try:
+            # Step 1: Get initial candidates (top_k=30 for reranking, or top_k*2 for non-rerank)
+            initial_top_k = 30 if use_rerank else top_k * 2
+            
             embedding_response = self.openai_client.embeddings.create(
                 model=settings.openai_model, input=query
             )
@@ -161,7 +177,7 @@ class RetrievalService:
                     FETCH FIRST :k ROWS ONLY
                 """,
                     query_vec=query_vector,
-                    k=top_k * 2,
+                    k=initial_top_k * 2,
                 )
                 vector_results = cursor.fetchall()
 
@@ -175,7 +191,7 @@ class RetrievalService:
                         range(len(bm25_scores)),
                         key=lambda i: bm25_scores[i],
                         reverse=True,
-                    )[: top_k * 2]
+                    )[: initial_top_k * 2]
                     bm25_results = [
                         (self._all_texts[i], bm25_scores[i]) for i in bm25_results
                     ]
@@ -220,16 +236,17 @@ class RetrievalService:
                         bm25_norm = 1.0 if score > 0 else 0.0
                     fused_scores[text] = fused_scores.get(text, 0) + bm25_norm * 0.3
 
-            final_results = sorted(
+            # Step 2: Get initial hybrid search results
+            initial_results = sorted(
                 fused_scores.items(), key=lambda x: x[1], reverse=True
-            )[:top_k]
+            )[:initial_top_k]
 
-            retrieved_logs = []
-            for rank, (text, hybrid_score) in enumerate(final_results, 1):
+            # Prepare documents for reranking
+            candidate_docs = []
+            for text, hybrid_score in initial_results:
                 original_distance = text_to_distance.get(text, None)
-                retrieved_logs.append(
+                candidate_docs.append(
                     {
-                        "rank": rank,
                         "text": text,
                         "hybrid_score": round(hybrid_score, 4),
                         "distance": (
@@ -239,6 +256,34 @@ class RetrievalService:
                         ),
                     }
                 )
+
+            # Step 3: Rerank if enabled
+            if use_rerank and len(candidate_docs) > 0:
+                try:
+                    reranker = RerankerService()
+                    # Rerank and get top 10 for LLM context, but respect user's top_k
+                    reranked_docs = reranker.rerank(query, candidate_docs, top_k=max(10, top_k))
+                    # Take only top_k as requested
+                    final_docs = reranked_docs[:top_k]
+                except Exception as e:
+                    logger.warning(f"Reranking failed, using hybrid search results: {e}")
+                    final_docs = candidate_docs[:top_k]
+            else:
+                final_docs = candidate_docs[:top_k]
+
+            # Step 4: Format final results
+            retrieved_logs = []
+            for rank, doc in enumerate(final_docs, 1):
+                result = {
+                    "rank": rank,
+                    "text": doc["text"],
+                    "hybrid_score": doc["hybrid_score"],
+                    "distance": doc.get("distance"),
+                }
+                # Add rerank_score if available
+                if "rerank_score" in doc:
+                    result["rerank_score"] = round(doc["rerank_score"], 4)
+                retrieved_logs.append(result)
 
             return {"retrieved_logs": retrieved_logs, "distances": distances}
 
