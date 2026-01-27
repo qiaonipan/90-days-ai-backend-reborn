@@ -2,10 +2,6 @@
 
 > **An enterprise-grade RAG system with hybrid retrieval (vector + BM25) for intelligent log diagnosis. Features dynamic file upload, real-time progress tracking, and batch processing optimization.**
 
-![RAG Result](screenshots/cause-oriented_RAG.png)
-*Example query result showing AI diagnosis and retrieved log evidence with similarity scores*
-
-
 
 ## 📌 Project Overview
 
