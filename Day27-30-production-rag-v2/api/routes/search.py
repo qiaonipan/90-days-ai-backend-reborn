@@ -1,5 +1,5 @@
 """
-Search API routes
+搜索API路由
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -19,7 +19,7 @@ def hybrid_search(
     retrieval_service: RetrievalService = Depends(get_retrieval_service),
     openai_client: OpenAI = Depends(get_openai_client),
 ):
-    """Perform hybrid search combining vector, BM25, and reranking"""
+    """执行混合搜索，结合向量搜索、BM25和重排序"""
     try:
         search_results = retrieval_service.hybrid_search(request.query, request.top_k)
 
@@ -32,7 +32,7 @@ def hybrid_search(
 
         retrieved_logs = search_results["retrieved_logs"]
         
-        # Use top 10 for LLM context (reranked results), but return all requested top_k to user
+        # 使用前10条日志作为LLM上下文（重排序后的结果），但返回用户请求的所有top_k结果
         context_logs = retrieved_logs[:10]
         context = "\n\n".join(log["text"] for log in context_logs)
         
@@ -59,7 +59,7 @@ Format your response clearly and concisely."""
 
         summary = completion.choices[0].message.content.strip()
         
-        # Check if reranking was used (rerank_score present in results)
+        # 检查是否使用了重排序（结果中存在rerank_score）
         has_rerank = any("rerank_score" in log for log in retrieved_logs)
         note = (
             "Results from hybrid retrieval (vector 70% + BM25 30%) with CrossEncoder reranking"

@@ -1,5 +1,5 @@
 """
-Database connection pool management
+数据库连接池管理
 """
 
 import oracledb
@@ -9,14 +9,14 @@ from config import settings
 
 
 class DatabasePool:
-    """Oracle database connection pool"""
+    """Oracle数据库连接池"""
 
     def __init__(self):
         self._pool = None
         self._initialized = False
 
     def initialize(self):
-        """Initialize connection pool"""
+        """初始化连接池"""
         if self._initialized:
             return
 
@@ -38,7 +38,7 @@ class DatabasePool:
 
     @contextmanager
     def acquire(self) -> Generator:
-        """Acquire database connection from pool"""
+        """从池中获取数据库连接"""
         if not self._initialized:
             self.initialize()
 
@@ -49,7 +49,7 @@ class DatabasePool:
             self._pool.release(conn)
 
     def get_cursor(self):
-        """Get a cursor from pool"""
+        """从池中获取游标"""
         if not self._initialized:
             self.initialize()
 
@@ -57,7 +57,7 @@ class DatabasePool:
         return conn, conn.cursor()
 
     def close(self):
-        """Close connection pool"""
+        """关闭连接池"""
         if self._pool:
             self._pool.close()
             self._initialized = False
@@ -67,7 +67,7 @@ db_pool = DatabasePool()
 
 
 def init_tables():
-    """Initialize database tables"""
+    """初始化数据库表"""
     with db_pool.acquire() as conn:
         cursor = conn.cursor()
 

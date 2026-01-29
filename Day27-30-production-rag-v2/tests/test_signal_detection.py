@@ -1,5 +1,5 @@
 """
-Signal detection unit tests
+信号检测单元测试
 """
 
 import pytest
@@ -13,10 +13,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 @pytest.mark.unit
 class TestAnomalySignalExtraction:
-    """Test anomaly signal extraction logic"""
+    """测试异常信号提取逻辑"""
 
     def test_extract_signals_empty_logs(self):
-        """Test with empty log list"""
+        """测试空日志列表"""
         from services.signal_detection import SignalDetectionService
 
         service = SignalDetectionService()
@@ -24,7 +24,7 @@ class TestAnomalySignalExtraction:
         assert result == []
 
     def test_extract_signals_insufficient_logs(self):
-        """Test with insufficient logs (< 10)"""
+        """测试日志不足（< 10）"""
         from services.signal_detection import SignalDetectionService
 
         service = SignalDetectionService()
@@ -33,14 +33,14 @@ class TestAnomalySignalExtraction:
         assert result == []
 
     def test_extract_signals_valid_hdfs_logs(self, sample_log_entries):
-        """Test with valid HDFS format logs"""
+        """测试有效的HDFS格式日志"""
         from services.signal_detection import SignalDetectionService
 
         service = SignalDetectionService()
-        logs = sample_log_entries * 3  # Ensure we have enough logs
+        logs = sample_log_entries * 3  # 确保有足够的日志
 
         result = service.extract_anomaly_signals(logs)
 
-        # Should return list (may be empty if no anomalies detected)
+        # 应返回列表（如果未检测到异常可能为空）
         assert isinstance(result, list)
-        assert len(result) <= 3  # Top 3 signals
+        assert len(result) <= 3  # Top 3信号

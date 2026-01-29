@@ -1,5 +1,5 @@
 """
-Anomaly signal detection service
+异常信号检测服务
 """
 
 import re
@@ -12,13 +12,13 @@ from utils.logging_config import logger
 
 
 class SignalDetectionService:
-    """Service for detecting anomaly signals from logs"""
+    """从日志中检测异常信号的服务"""
 
     def __init__(self):
         self.template_miner = self._init_template_miner()
 
     def _init_template_miner(self) -> TemplateMiner:
-        """Initialize Drain3 template miner"""
+        """初始化Drain3模板挖掘器"""
         config = TemplateMinerConfig()
         config.drain_depth = 4
         config.drain_sim_th = 0.5
@@ -28,16 +28,16 @@ class SignalDetectionService:
             r"\d+\.\d+\.\d+\.\d+",
             r"/\S+",
             r"\d+",
-            r"pod-[a-z0-9-]+",  # Kubernetes pod names
-            r"[a-z0-9-]+-[a-z0-9]{5}",  # Kubernetes pod suffixes
+            r"pod-[a-z0-9-]+",  # Kubernetes Pod名称
+            r"[a-z0-9-]+-[a-z0-9]{5}",  # Kubernetes Pod后缀
         ]
         return TemplateMiner(config=config)
 
     def extract_anomaly_signals(self, log_entries: List[str]) -> List[Dict[str, Any]]:
         """
-        Extract anomaly signals from logs using Drain parser and time-series analysis.
+        使用Drain解析器和时间序列分析从日志中提取异常信号。
 
-        Returns list of top-3 anomaly windows with templates and scores.
+        返回包含模板和分数的top-3异常窗口列表。
         """
         try:
             parsed_logs = []
@@ -52,7 +52,7 @@ class SignalDetectionService:
                 pod_name = None
                 namespace = None
 
-                # Try HDFS format first
+                # 首先尝试HDFS格式
                 match = re.match(
                     r"^(\d{6})\s+(\d{6})\s+\d+\s+(\w+)\s+(.+?):\s+(.+)$", line
                 )
@@ -66,7 +66,7 @@ class SignalDetectionService:
                     except (ValueError, TypeError):
                         ts = None
                 else:
-                    # Try Kubernetes JSON format
+                    # 尝试Kubernetes JSON格式
                     json_match = re.search(r'\{[^}]*"timestamp"[^}]*\}', line)
                     if json_match:
                         try:
@@ -87,7 +87,7 @@ class SignalDetectionService:
                         except (json.JSONDecodeError, ValueError, TypeError):
                             pass
 
-                    # Try Kubernetes RFC3339 timestamp format (e.g., 2024-01-02T10:30:45.123Z)
+                    # 尝试Kubernetes RFC3339时间戳格式（例如：2024-01-02T10:30:45.123Z）
                     if ts is None:
                         rfc3339_match = re.search(
                             r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))",
@@ -100,7 +100,7 @@ class SignalDetectionService:
                             except (ValueError, TypeError):
                                 pass
 
-                    # Try Nginx format
+                    # 尝试Nginx格式
                     if ts is None:
                         nginx_match = re.search(
                             r"\[(\d{2}/\w{3}/\d{4}):(\d{2}:\d{2}:\d{2})", line
@@ -114,7 +114,7 @@ class SignalDetectionService:
                             except (ValueError, TypeError):
                                 ts = None
 
-                    # Try ISO format (fallback)
+                    # 尝试ISO格式（回退）
                     if ts is None:
                         iso_match = re.search(
                             r"(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2})", line
@@ -125,7 +125,7 @@ class SignalDetectionService:
                             except (ValueError, TypeError):
                                 ts = None
 
-                    # Extract Kubernetes metadata (pod, namespace) from log line
+                    # 从日志行中提取Kubernetes元数据（pod、namespace）
                     if pod_name is None:
                         pod_match = re.search(r"\bpod[=:](\S+)", line, re.IGNORECASE)
                         if pod_match:
@@ -138,7 +138,7 @@ class SignalDetectionService:
                         if ns_match:
                             namespace = ns_match.group(1)
 
-                    # Extract log level
+                    # 提取日志级别
                     level_match = re.search(
                         r"\b(ERROR|WARN|INFO|DEBUG|FATAL|CRITICAL)\b",
                         line,
@@ -147,7 +147,7 @@ class SignalDetectionService:
                     if level_match:
                         level = level_match.group(1).upper()
 
-                    # Extract component from Kubernetes logs (common patterns)
+                    # 从Kubernetes日志中提取组件（常见模式）
                     if component is None:
                         comp_match = re.search(r"\[([^\]]+)\]", line)
                         if comp_match:

@@ -9,10 +9,10 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 username = os.getenv("ORACLE_USERNAME")
 password = os.getenv("ORACLE_PASSWORD")
-dsn = os.getenv("ORACLE_DSN")  # required
+dsn = os.getenv("ORACLE_DSN")  # 必需
 wallet_path = os.getenv("ORACLE_WALLET_PATH")
 
-# Connect to database
+# 连接到数据库
 connection = oracledb.connect(
     user=username,
     password=password,
@@ -28,17 +28,17 @@ def oracle_vector_search(query, title, top_k=3):
     print(f"\n📋 {title}")
     print(f"🔍 Query: {query}\n📌 Top {top_k} most relevant results:")
 
-    # Generate query embedding
+    # 生成查询embedding
     query_embedding_list = (
         openai.embeddings.create(model="text-embedding-3-small", input=query)
         .data[0]
         .embedding
     )
 
-    # Convert to the format Oracle prefers
+    # 转换为Oracle首选的格式
     query_embedding = array.array("f", query_embedding_list)
 
-    # Query database
+    # 查询数据库
     cursor.execute(
         """
         SELECT text, VECTOR_DISTANCE(embedding, :query_vec) AS distance
@@ -52,12 +52,12 @@ def oracle_vector_search(query, title, top_k=3):
 
     results = cursor.fetchall()
     for i, (text, distance) in enumerate(results, 1):
-        similarity = 1 - distance / 2  # rough conversion to similarity
+        similarity = 1 - distance / 2  # 粗略转换为相似度
         print(f"{i}. {text}")
         print(f"   (similarity ≈ {similarity:.3f}, distance = {distance:.4f})")
 
 
-# ---------- Run example searches ----------
+# ---------- 运行示例搜索 ----------
 oracle_vector_search(
     "What caused the block to be missing?", "HDFS Block Missing Search"
 )
@@ -70,6 +70,6 @@ oracle_vector_search(
     "PacketResponder terminating", "PacketResponder Termination Search"
 )
 
-# ---------- Close connection after all searches complete ----------
+# ---------- 所有搜索完成后关闭连接 ----------
 connection.close()
 print("\n✅ Search complete, database connection closed.")

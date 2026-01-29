@@ -1,5 +1,5 @@
 """
-FastAPI application main module
+FastAPI应用主模块
 """
 
 from contextlib import asynccontextmanager
@@ -14,12 +14,12 @@ from services.reranker import RerankerService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager"""
-    # Startup
+    """应用生命周期管理器"""
+    # 启动
     try:
         db_pool.initialize()
         init_tables()
-        # Warmup reranker model to avoid cold start delay
+        # 预热重排序模型以避免冷启动延迟
         RerankerService.warmup()
         logger.info("Application started successfully")
     except Exception as e:
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown
+    # 关闭
     try:
         db_pool.close()
         logger.info("Application shutdown complete")
@@ -61,19 +61,19 @@ app.include_router(upload.router)
 
 @app.get("/", tags=["Frontend"])
 def redirect_to_frontend():
-    """Redirect root to frontend"""
+    """重定向根路径到前端"""
     return RedirectResponse(url="/static/index.html")
 
 
 @app.get("/favicon.ico", tags=["Frontend"])
 def favicon():
-    """Favicon endpoint"""
+    """Favicon端点"""
     return Response(status_code=204)
 
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    """Health check endpoint"""
+    """健康检查端点"""
     try:
         with db_pool.acquire() as conn:
             cursor = conn.cursor()

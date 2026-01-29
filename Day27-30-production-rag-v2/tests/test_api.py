@@ -1,5 +1,5 @@
 """
-API endpoint tests
+API端点测试
 """
 
 import pytest
@@ -10,15 +10,15 @@ from unittest.mock import patch, MagicMock
 
 @pytest.mark.api
 class TestUploadEndpoint:
-    """Test /upload endpoint"""
+    """测试 /upload 端点"""
 
     def test_upload_no_file(self, client):
-        """Test upload without file"""
+        """测试无文件上传"""
         response = client.post("/upload")
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == 422  # 验证错误
 
     def test_upload_invalid_file(self, client, tmp_path):
-        """Test upload with invalid file"""
+        """测试无效文件上传"""
         invalid_file = tmp_path / "invalid.txt"
         invalid_file.write_text("")
 
@@ -27,14 +27,14 @@ class TestUploadEndpoint:
                 "/upload", files={"file": ("invalid.txt", f, "text/plain")}
             )
 
-        # Should return error for empty file
-        assert response.status_code in [200, 400]  # Streaming response or error
+        # 空文件应返回错误
+        assert response.status_code in [200, 400]  # 流式响应或错误
 
     def test_upload_valid_log_file(self, client, sample_log_file, mock_db_connection):
-        """Test upload with valid log file"""
+        """测试有效日志文件上传"""
         mock_conn, mock_cursor = mock_db_connection
 
-        # Mock database operations
+        # 模拟数据库操作
         mock_cursor.execute.return_value = None
         mock_cursor.executemany.return_value = None
         mock_cursor.fetchall.return_value = []
@@ -44,23 +44,23 @@ class TestUploadEndpoint:
                 "/upload", files={"file": ("test.log", f, "text/plain")}
             )
 
-        # Streaming response should return 200
+        # 流式响应应返回200
         assert response.status_code == 200
 
 
 @pytest.mark.api
 class TestSearchEndpoint:
-    """Test /search endpoint"""
+    """测试 /search 端点"""
 
     def test_search_empty_query(self, client):
-        """Test search with empty query"""
+        """测试空查询搜索"""
         response = client.post("/search", json={"query": "", "top_k": 3})
-        # Should handle empty query gracefully
+        # 应优雅地处理空查询
         assert response.status_code in [200, 400]
 
     def test_search_valid_query(self, client, populated_db_cursor, mock_openai_client):
-        """Test search with valid query"""
-        # Mock vector search results
+        """测试有效查询搜索"""
+        # 模拟向量搜索结果
         populated_db_cursor.fetchall.return_value = [
             (
                 "081110 145404 34 INFO dfs.DataNode$PacketResponder: PacketResponder 0",
@@ -69,13 +69,13 @@ class TestSearchEndpoint:
             ("081110 145404 35 ERROR dfs.DataNode$PacketResponder: Exception", 0.2),
         ]
 
-        # Mock retrieval service to return sample results
+        # 模拟检索服务返回示例结果
         from services.retrieval import RetrievalService
 
         mock_retrieval = RetrievalService(mock_openai_client)
         mock_retrieval.reload_bm25 = lambda: None
 
-        # Mock hybrid_search to return test data (compatible with use_rerank parameter)
+        # 模拟hybrid_search返回测试数据（兼容use_rerank参数）
         mock_retrieval.hybrid_search = lambda query, top_k, use_rerank=True: {
             "retrieved_logs": [
                 {
@@ -94,7 +94,7 @@ class TestSearchEndpoint:
             "distances": [0.1, 0.2],
         }
 
-        # Override dependencies
+        # 覆盖依赖项
         from api.dependencies import get_retrieval_service
         from api.main import app
 
@@ -112,16 +112,16 @@ class TestSearchEndpoint:
             assert "retrieved_logs" in data
             assert "ai_summary" in data
         finally:
-            # Clean up override
+            # 清理覆盖
             app.dependency_overrides.pop(get_retrieval_service, None)
 
 
 @pytest.mark.api
 class TestDiagnoseEndpoint:
-    """Test /diagnose endpoint"""
+    """测试 /diagnose 端点"""
 
     def test_diagnose_no_signals(self, client, empty_db_cursor):
-        """Test diagnose when no anomaly signals exist"""
+        """测试当不存在异常信号时的诊断"""
         empty_db_cursor.fetchall.return_value = []
 
         response = client.post("/diagnose", json={})
@@ -135,11 +135,11 @@ class TestDiagnoseEndpoint:
 
 @pytest.mark.api
 class TestProgressEndpoint:
-    """Test /progress endpoint"""
+    """测试 /progress 端点"""
 
     def test_progress_idle(self, client):
-        """Test progress when no upload in progress"""
-        # Reset upload progress state before test
+        """测试无上传进行时的进度"""
+        # 在测试前重置上传进度状态
         from api.routes import upload
 
         upload.upload_progress = {
@@ -160,14 +160,14 @@ class TestProgressEndpoint:
 
 @pytest.mark.api
 class TestRootEndpoint:
-    """Test root endpoint"""
+    """测试根端点"""
 
     def test_root_redirect(self, client):
-        """Test root endpoint redirects to frontend"""
+        """测试根端点重定向到前端"""
         response = client.get("/", follow_redirects=False)
-        assert response.status_code in [200, 307, 308]  # Redirect or serve static
+        assert response.status_code in [200, 307, 308]  # 重定向或提供静态文件
 
     def test_favicon(self, client):
-        """Test favicon endpoint"""
+        """测试favicon端点"""
         response = client.get("/favicon.ico")
-        assert response.status_code == 204  # No content
+        assert response.status_code == 204  # 无内容

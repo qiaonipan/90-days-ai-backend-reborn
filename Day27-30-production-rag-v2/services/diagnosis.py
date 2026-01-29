@@ -1,5 +1,5 @@
 """
-Diagnosis service for RAG-based anomaly diagnosis
+基于RAG的异常诊断服务
 """
 
 import array
@@ -14,7 +14,7 @@ from utils.logging_config import logger
 
 
 class DiagnosisService:
-    """Service for performing RAG-based diagnosis"""
+    """执行基于RAG的诊断服务"""
 
     def __init__(self, openai_client, retrieval_service: RetrievalService):
         self.openai_client = openai_client
@@ -25,8 +25,8 @@ class DiagnosisService:
         self, candidate_logs: List[Dict], original_query: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Perform RAG-based diagnosis on a small, high-signal subset of logs.
-        If query is provided, performs hybrid vector + text search rerank before LLM.
+        对小的、高信号日志子集执行基于RAG的诊断。
+        如果提供了查询，在LLM之前执行混合向量+文本搜索重排序。
         """
         if not candidate_logs:
             return {

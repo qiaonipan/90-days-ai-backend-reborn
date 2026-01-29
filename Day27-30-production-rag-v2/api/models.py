@@ -1,5 +1,5 @@
 """
-Pydantic models for API requests and responses
+API请求和响应的Pydantic模型
 """
 
 from pydantic import BaseModel
@@ -7,14 +7,14 @@ from typing import Optional, List
 
 
 class QueryRequest(BaseModel):
-    """Request model for search endpoint"""
+    """搜索端点的请求模型"""
 
     query: str = "What caused the block to be missing?"
     top_k: int = 3
 
 
 class DiagnosisRequest(BaseModel):
-    """Request model for diagnosis endpoint"""
+    """诊断端点的请求模型"""
 
     query: Optional[str] = None
     signal_ids: Optional[List[int]] = None

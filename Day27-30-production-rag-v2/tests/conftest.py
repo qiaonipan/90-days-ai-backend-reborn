@@ -1,5 +1,5 @@
 """
-Pytest configuration and shared fixtures
+Pytest配置和共享fixture
 """
 
 import os
@@ -9,62 +9,62 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock, MagicMock, patch
 
-# Add parent directory to path for imports
+# 添加父目录到路径以便导入
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Mock environment variables BEFORE any imports
+# 在任何导入之前模拟环境变量
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 os.environ.setdefault("ORACLE_USERNAME", "test_user")
 os.environ.setdefault("ORACLE_PASSWORD", "test_pass")
 os.environ.setdefault("ORACLE_DSN", "test_dsn")
 os.environ.setdefault("ORACLE_WALLET_PATH", "/tmp/test_wallet")
 
-# Create mock database connection objects
+# 创建模拟数据库连接对象
 _global_mock_conn = MagicMock()
 _global_mock_cursor = MagicMock()
 _global_mock_conn.cursor.return_value = _global_mock_cursor
 
-# Create mock connection pool
+# 创建模拟连接池
 _global_mock_pool = MagicMock()
 _global_mock_pool.acquire.return_value = _global_mock_conn
 _global_mock_pool.release = MagicMock()
 
-# Patch oracledb.create_pool BEFORE importing api module
+# 在导入api模块之前修补oracledb.create_pool
 _patcher = patch("oracledb.create_pool", return_value=_global_mock_pool)
 _patcher.start()
 
-# Now safe to import api (database connection is mocked)
+# 现在可以安全地导入api（数据库连接已被模拟）
 from api.main import app
 import api.main
 from database.connection import db_pool
 
-# Set mocked connection and cursor in api module
+# 在api模块中设置模拟的连接和游标
 from fastapi.testclient import TestClient
 
-# Reset db_pool before each test
+# 在每个测试之前重置db_pool
 db_pool._pool = _global_mock_pool
 db_pool._initialized = True
 
 
 @pytest.fixture(scope="session")
 def mock_db_connection():
-    """Mock Oracle database connection"""
+    """模拟Oracle数据库连接"""
     return _global_mock_conn, _global_mock_cursor
 
 
 @pytest.fixture(scope="session")
 def mock_openai_client():
-    """Mock OpenAI client"""
+    """模拟OpenAI客户端"""
     mock_client = MagicMock()
 
-    # Mock embedding response
+    # 模拟embedding响应
     mock_embedding_response = MagicMock()
     mock_embedding_data = MagicMock()
-    mock_embedding_data.embedding = [0.1] * 3072  # text-embedding-3-large dimension
+    mock_embedding_data.embedding = [0.1] * 3072  # text-embedding-3-large维度
     mock_embedding_response.data = [mock_embedding_data]
     mock_client.embeddings.create.return_value = mock_embedding_response
 
-    # Mock chat completion response
+    # 模拟chat completion响应
     mock_chat_response = MagicMock()
     mock_message = MagicMock()
     mock_message.content = '{"pattern_summary": {"error_distribution_summary": "Test", "time_concentration_summary": "Test", "common_features_summary": "Test"}, "root_cause": "Test diagnosis", "confidence": 0.8, "evidence": [], "alternatives": [], "next_steps": []}'
@@ -78,7 +78,7 @@ def mock_openai_client():
 
 @pytest.fixture(scope="function")
 def sample_log_entries():
-    """Sample log entries for testing"""
+    """用于测试的示例日志条目"""
     return [
         "081110 145404 34 INFO dfs.DataNode$PacketResponder: PacketResponder 0 for block blk_-1608999687919862906 terminating",
         "081110 145404 35 ERROR dfs.DataNode$PacketResponder: Exception in PacketResponder 0 for block blk_-1608999687919862906",
@@ -90,7 +90,7 @@ def sample_log_entries():
 
 @pytest.fixture(scope="function")
 def sample_log_file(sample_log_entries, tmp_path):
-    """Create a temporary log file for testing"""
+    """创建用于测试的临时日志文件"""
     log_file = tmp_path / "test_logs.log"
     log_file.write_text("\n".join(sample_log_entries))
     return str(log_file)
@@ -98,63 +98,63 @@ def sample_log_file(sample_log_entries, tmp_path):
 
 @pytest.fixture(scope="function", autouse=True)
 def reset_db_pool():
-    """Reset database pool before each test"""
+    """在每个测试之前重置数据库连接池"""
     db_pool._pool = _global_mock_pool
     db_pool._initialized = True
     yield
-    # Cleanup after test if needed
+    # 测试后清理（如果需要）
     db_pool._initialized = False
 
 
 @pytest.fixture(scope="function")
 def app_with_mocks(mock_db_connection, mock_openai_client):
-    """Create FastAPI app with mocked dependencies"""
+    """创建带有模拟依赖项的FastAPI应用"""
     mock_conn, mock_cursor = mock_db_connection
 
-    # Clear lru_cache before setting up
+    # 在设置之前清除lru_cache
     from api.dependencies import get_openai_client, get_retrieval_service
 
     get_openai_client.cache_clear()
 
-    # Create a new RetrievalService with mocked client to avoid real API calls
+    # 创建带有模拟客户端的新RetrievalService以避免真实API调用
     from services.retrieval import RetrievalService
 
     mock_retrieval_service = RetrievalService(mock_openai_client)
-    # Mock reload_bm25 to avoid database calls
+    # 模拟reload_bm25以避免数据库调用
     mock_retrieval_service.reload_bm25 = lambda: None
 
-    # Use FastAPI dependency_overrides instead of patch
+    # 使用FastAPI dependency_overrides而不是patch
     app.dependency_overrides[get_openai_client] = lambda: mock_openai_client
     app.dependency_overrides[get_retrieval_service] = lambda: mock_retrieval_service
 
     yield app
 
-    # Clean up after test
+    # 测试后清理
     app.dependency_overrides.clear()
     get_openai_client.cache_clear()
 
 
 @pytest.fixture(scope="function")
 def client(app_with_mocks):
-    """Test client for API endpoints"""
+    """API端点的测试客户端"""
     return TestClient(app_with_mocks)
 
 
 @pytest.fixture(scope="function")
 def empty_db_cursor(mock_db_connection):
-    """Mock cursor with empty database"""
+    """带有空数据库的模拟游标"""
     _, mock_cursor = mock_db_connection
     mock_cursor.fetchall.return_value = []
-    mock_cursor.fetchone.return_value = (0,)  # For COUNT queries
+    mock_cursor.fetchone.return_value = (0,)  # 用于COUNT查询
     return mock_cursor
 
 
 @pytest.fixture(scope="function")
 def populated_db_cursor(mock_db_connection, sample_log_entries):
-    """Mock cursor with sample data"""
+    """带有示例数据的模拟游标"""
     _, mock_cursor = mock_db_connection
 
-    # Mock fetchall for docs table
+    # 为docs表模拟fetchall
     mock_docs = [
         (1, sample_log_entries[0], None),
         (2, sample_log_entries[1], None),
@@ -162,7 +162,7 @@ def populated_db_cursor(mock_db_connection, sample_log_entries):
     ]
     mock_cursor.fetchall.return_value = mock_docs
 
-    # Mock fetchone for COUNT queries
+    # 为COUNT查询模拟fetchone
     mock_cursor.fetchone.return_value = (len(mock_docs),)
 
     return mock_cursor

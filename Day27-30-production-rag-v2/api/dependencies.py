@@ -1,5 +1,5 @@
 """
-FastAPI dependencies for dependency injection
+FastAPI依赖注入的依赖项
 """
 
 from functools import lru_cache
@@ -12,18 +12,18 @@ from config import settings
 
 @lru_cache()
 def get_openai_client() -> OpenAI:
-    """Get OpenAI client singleton"""
+    """获取OpenAI客户端单例"""
     return OpenAI(api_key=settings.openai_api_key)
 
 
 @lru_cache()
 def get_signal_detection_service() -> SignalDetectionService:
-    """Get signal detection service singleton"""
+    """获取信号检测服务单例"""
     return SignalDetectionService()
 
 
 def get_retrieval_service() -> RetrievalService:
-    """Get retrieval service instance"""
+    """获取检索服务实例"""
     openai_client = get_openai_client()
     service = RetrievalService(openai_client)
     service.reload_bm25()
@@ -31,7 +31,7 @@ def get_retrieval_service() -> RetrievalService:
 
 
 def get_diagnosis_service() -> DiagnosisService:
-    """Get diagnosis service instance"""
+    """获取诊断服务实例"""
     openai_client = get_openai_client()
     retrieval_service = get_retrieval_service()
     return DiagnosisService(openai_client, retrieval_service)

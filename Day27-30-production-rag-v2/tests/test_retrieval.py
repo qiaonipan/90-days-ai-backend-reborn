@@ -1,5 +1,5 @@
 """
-Retrieval and search unit tests
+检索和搜索单元测试
 """
 
 import pytest
@@ -12,10 +12,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 @pytest.mark.unit
 class TestCandidateRetrieval:
-    """Test candidate log retrieval"""
+    """测试候选日志检索"""
 
     def test_retrieve_candidates_empty_signals(self):
-        """Test retrieval with empty signals"""
+        """测试空信号检索"""
         from services.retrieval import RetrievalService
 
         mock_client = MagicMock()
@@ -27,10 +27,10 @@ class TestCandidateRetrieval:
 
 @pytest.mark.unit
 class TestPatternAnalysis:
-    """Test log pattern analysis"""
+    """测试日志模式分析"""
 
     def test_analyze_log_patterns_empty(self):
-        """Test pattern analysis with empty logs"""
+        """测试空日志的模式分析"""
         from services.pattern_analysis import PatternAnalysisService
 
         service = PatternAnalysisService()
@@ -38,7 +38,7 @@ class TestPatternAnalysis:
         assert result == {}
 
     def test_analyze_log_patterns_with_logs(self):
-        """Test pattern analysis with sample logs"""
+        """测试示例日志的模式分析"""
         from services.pattern_analysis import PatternAnalysisService
 
         service = PatternAnalysisService()

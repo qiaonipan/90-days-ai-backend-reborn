@@ -1,5 +1,5 @@
 """
-Pattern analysis service for log pattern extraction
+日志模式提取的模式分析服务
 """
 
 import re
@@ -9,14 +9,14 @@ from collections import Counter
 
 
 class PatternAnalysisService:
-    """Service for analyzing log patterns"""
+    """分析日志模式的服务"""
 
     def analyze_log_patterns(self, candidate_logs: List[Dict]) -> Dict[str, Any]:
         """
-        Analyze candidate logs to extract statistical patterns:
-        - Error type distribution
-        - Time concentration
-        - Common keywords/patterns
+        分析候选日志以提取统计模式：
+        - 错误类型分布
+        - 时间集中度
+        - 常见关键词/模式
         """
         if not candidate_logs:
             return {}

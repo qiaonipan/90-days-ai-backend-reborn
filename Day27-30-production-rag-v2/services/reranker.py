@@ -1,5 +1,5 @@
 """
-Reranker service using CrossEncoder for query-document relevance scoring
+使用CrossEncoder进行查询-文档相关性评分的重排序服务
 """
 
 from typing import List, Dict, Any, Tuple
@@ -9,14 +9,14 @@ from utils.logging_config import logger
 
 
 class RerankerService:
-    """Service for reranking search results using CrossEncoder"""
+    """使用CrossEncoder重排序搜索结果的服务"""
 
     _model: CrossEncoder = None
     _model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     @classmethod
     def get_model(cls) -> CrossEncoder:
-        """Get CrossEncoder model singleton"""
+        """获取CrossEncoder模型单例"""
         if cls._model is None:
             logger.info(f"Loading CrossEncoder model: {cls._model_name}")
             try:
@@ -29,10 +29,10 @@ class RerankerService:
 
     @classmethod
     def warmup(cls):
-        """Warmup the model with dummy data to avoid cold start delay"""
+        """使用虚拟数据预热模型以避免冷启动延迟"""
         try:
             model = cls.get_model()
-            # Warmup with dummy query-document pairs
+            # 使用虚拟查询-文档对进行预热
             dummy_pairs = [
                 ["What is the error?", "This is a test log entry with error message"],
                 ["Why did it fail?", "The system encountered a failure due to timeout"],
@@ -46,15 +46,15 @@ class RerankerService:
         self, query: str, documents: List[Dict[str, Any]], top_k: int = 10
     ) -> List[Dict[str, Any]]:
         """
-        Rerank documents based on query-document relevance
+        基于查询-文档相关性重排序文档
 
         Args:
-            query: User query string
-            documents: List of document dicts with 'text' field
-            top_k: Number of top results to return after reranking
+            query: 用户查询字符串
+            documents: 包含'text'字段的文档字典列表
+            top_k: 重排序后返回的top结果数量
 
         Returns:
-            List of reranked documents with 'rerank_score' added
+            添加了'rerank_score'的重排序文档列表
         """
         if not documents:
             return []
@@ -62,17 +62,17 @@ class RerankerService:
         try:
             model = self.get_model()
 
-            # Prepare query-document pairs for CrossEncoder
+            # 为CrossEncoder准备查询-文档对
             pairs = [[query, doc.get("text", "")] for doc in documents]
 
-            # Get rerank scores
+            # 获取重排序分数
             rerank_scores = model.predict(pairs)
 
-            # Add rerank_score to each document
+            # 为每个文档添加rerank_score
             for doc, score in zip(documents, rerank_scores):
                 doc["rerank_score"] = float(score)
 
-            # Sort by rerank_score descending and return top_k
+            # 按rerank_score降序排序并返回top_k
             reranked = sorted(
                 documents, key=lambda x: x.get("rerank_score", 0.0), reverse=True
             )[:top_k]
@@ -85,6 +85,6 @@ class RerankerService:
 
         except Exception as e:
             logger.error(f"Error in reranking: {e}", exc_info=True)
-            # Fallback: return original documents if reranking fails
+            # 回退：如果重排序失败，返回原始文档
             return documents[:top_k]
 

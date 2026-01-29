@@ -1,5 +1,5 @@
 """
-Logging configuration
+日志配置
 """
 
 import logging
@@ -10,7 +10,7 @@ from config import settings
 
 
 def setup_logging():
-    """Configure application logging"""
+    """配置应用日志"""
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
 

@@ -1,5 +1,5 @@
 """
-Diagnosis API routes
+诊断API路由
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -25,7 +25,7 @@ def diagnose_anomalies(
     retrieval_service: RetrievalService = Depends(get_retrieval_service),
     signal_service: SignalDetectionService = Depends(get_signal_detection_service),
 ):
-    """Perform anomaly diagnosis using signal-driven retrieval and RAG"""
+    """使用信号驱动的检索和RAG执行异常诊断"""
     try:
         with db_pool.acquire() as conn:
             cursor = conn.cursor()

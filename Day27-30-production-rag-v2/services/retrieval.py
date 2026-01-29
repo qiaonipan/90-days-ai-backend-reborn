@@ -1,5 +1,5 @@
 """
-Retrieval service for candidate log retrieval and hybrid search
+候选日志检索和混合搜索服务
 """
 
 import array
@@ -15,7 +15,7 @@ from services.reranker import RerankerService
 
 
 class RetrievalService:
-    """Service for retrieving and searching logs"""
+    """日志检索和搜索服务"""
 
     def __init__(self, openai_client):
         self.openai_client = openai_client
@@ -23,7 +23,7 @@ class RetrievalService:
         self._all_texts = []
 
     def reload_bm25(self):
-        """Reload BM25 index from database"""
+        """从数据库重新加载BM25索引"""
         with db_pool.acquire() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT text FROM docs")
@@ -41,8 +41,8 @@ class RetrievalService:
 
     def retrieve_candidate_logs(self, suspicious_signals: List[Dict]) -> List[Dict]:
         """
-        Retrieve candidate logs based on anomaly signals using REGEXP_LIKE.
-        Returns a small, high-signal-to-noise subset of logs (max 300).
+        基于异常信号使用REGEXP_LIKE检索候选日志。
+        返回一个小的、高信噪比的日志子集（最多300条）。
         """
         all_candidates = []
 
@@ -147,18 +147,18 @@ class RetrievalService:
         self, query: str, top_k: int, use_rerank: bool = True
     ) -> Dict[str, Any]:
         """
-        Perform hybrid search combining vector and BM25, with optional reranking
+        执行混合搜索，结合向量搜索和BM25，可选重排序
         
         Args:
-            query: User query string
-            top_k: Number of results to return
-            use_rerank: Whether to use reranking (default: True)
+            query: 用户查询字符串
+            top_k: 返回结果数量
+            use_rerank: 是否使用重排序（默认：True）
         
         Returns:
-            Dict with retrieved_logs and distances
+            包含retrieved_logs和distances的字典
         """
         try:
-            # Step 1: Get initial candidates (top_k=30 for reranking, or top_k*2 for non-rerank)
+            # 步骤1：获取初始候选（重排序时top_k=30，否则top_k*2）
             initial_top_k = 30 if use_rerank else top_k * 2
             
             embedding_response = self.openai_client.embeddings.create(
@@ -236,12 +236,12 @@ class RetrievalService:
                         bm25_norm = 1.0 if score > 0 else 0.0
                     fused_scores[text] = fused_scores.get(text, 0) + bm25_norm * 0.3
 
-            # Step 2: Get initial hybrid search results
+            # 步骤2：获取初始混合搜索结果
             initial_results = sorted(
                 fused_scores.items(), key=lambda x: x[1], reverse=True
             )[:initial_top_k]
 
-            # Prepare documents for reranking
+            # 准备用于重排序的文档
             candidate_docs = []
             for text, hybrid_score in initial_results:
                 original_distance = text_to_distance.get(text, None)
@@ -257,13 +257,13 @@ class RetrievalService:
                     }
                 )
 
-            # Step 3: Rerank if enabled
+            # 步骤3：如果启用，进行重排序
             if use_rerank and len(candidate_docs) > 0:
                 try:
                     reranker = RerankerService()
-                    # Rerank and get top 10 for LLM context, but respect user's top_k
+                    # 重排序并获取前10条作为LLM上下文，但尊重用户的top_k
                     reranked_docs = reranker.rerank(query, candidate_docs, top_k=max(10, top_k))
-                    # Take only top_k as requested
+                    # 只取用户请求的top_k
                     final_docs = reranked_docs[:top_k]
                 except Exception as e:
                     logger.warning(f"Reranking failed, using hybrid search results: {e}")
@@ -271,7 +271,7 @@ class RetrievalService:
             else:
                 final_docs = candidate_docs[:top_k]
 
-            # Step 4: Format final results
+            # 步骤4：格式化最终结果
             retrieved_logs = []
             for rank, doc in enumerate(final_docs, 1):
                 result = {
@@ -280,7 +280,7 @@ class RetrievalService:
                     "hybrid_score": doc["hybrid_score"],
                     "distance": doc.get("distance"),
                 }
-                # Add rerank_score if available
+                # 如果可用，添加rerank_score
                 if "rerank_score" in doc:
                     result["rerank_score"] = round(doc["rerank_score"], 4)
                 retrieved_logs.append(result)

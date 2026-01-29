@@ -1,5 +1,5 @@
 """
-Upload API routes
+上传API路由
 """
 
 import array
@@ -30,7 +30,7 @@ upload_progress = {"total": 0, "processed": 0, "status": "idle", "start_time": N
 
 @router.get("/progress")
 def get_progress():
-    """Get upload progress status"""
+    """获取上传进度状态"""
     if upload_progress["total"] == 0:
         return {"progress": 0, "status": "idle"}
     progress = (upload_progress["processed"] / upload_progress["total"]) * 100
@@ -55,7 +55,7 @@ async def upload_logs(
     signal_service: SignalDetectionService = Depends(get_signal_detection_service),
     retrieval_service: RetrievalService = Depends(get_retrieval_service),
 ):
-    """Upload and process log files"""
+    """上传并处理日志文件"""
     global upload_progress
 
     async def progress_generator():
