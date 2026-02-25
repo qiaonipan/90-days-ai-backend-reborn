@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search</title>
+    <style>
+        .upload-area {
+            width: 55%;
+            max-width: 100%;
+            margin: 10px auto;
+            padding: 12px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 2px dashed #1a73e8;
+            transition: all 0.3s;
+        }
+        .upload-area p {
+            margin: 4px 0;
+            font-size: 0.9em;
+            line-height: 1.2;
+        }
+        .upload-area:hover {
+            background: #f0f7ff;
+            border-color: #1557b0;
+        }
+        .upload-area.dragover {
+            background: #e3f2fd;
+            border-color: #1a73e8;
+        }
+        .upload-area input[type="file"] {
+            display: none;
+        }
+        .upload-btn {
+            padding: 8px 20px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .upload-btn:hover {
+            background: #1557b0;
+        }
+        .system-message {
+            align-self: center;
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin: 10px 0;
+            max-width: 80%;
+        }
+        .upload-status {
+            margin-top: 5px;
+            font-size: 0.85em;
+            color: #666;
+        }
+        .upload-status.success {
+            color: #4caf50;
+        }
+        .upload-status.error {
+            color: #e91e63;
+        }
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 24px;
+            background: linear-gradient(90deg, #1a73e8 0%, #4285f4 100%);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+        }
+        #progressText {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            width: 100%;
+            margin: 0;
+            padding: 20px 20px 10px 20px;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.4;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin: 0 0 10px 0;
+            font-size: 1.6em;
+            flex-shrink: 0;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin: 0 0 20px 0;
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+        .chat-container {
+            max-width: 100%;
+            width: 98%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        @media (min-width: 1400px) {
+            .chat-container {
+                max-width: 100%;
+                width: 98%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                border-radius: 0;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            max-width: 98%;
+        }
+        
+        @media (min-width: 1200px) {
+            .message {
+                max-width: 1300px;
+            }
+        }
+        .user-message {
+            align-self: flex-end;
+        }
+        .ai-message {
+            align-self: flex-start;
+        }
+        .message-content {
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.1;
+            font-size: 1.0em;
+        }
+        .user-message .message-content {
+            background: #1a73e8;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-message .message-content {
+            background: #f1f3f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            background: #e8f5e8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        .highlight {
+            background: #fff59d;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .log-item {
+            background: #f8fbff;
+            padding: 12px;
+            margin: 10px 0;
+            border-left: 4px solid #1a73e8;
+            border-radius: 8px;
+        }
+        .accordion {
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+        .accordion-header {
+            background: #f8fbff;
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s;
+        }
+        .accordion-header:hover {
+            background: #e8f0fe;
+        }
+        .accordion-header.active {
+            background: #e3f2fd;
+            border-bottom: 1px solid #1a73e8;
+        }
+        .accordion-title {
+            font-weight: 600;
+            color: #1a73e8;
+            flex: 1;
+        }
+        .accordion-score {
+            color: #e91e63;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .accordion-icon {
+            transition: transform 0.3s;
+            font-size: 14px;
+            color: #666;
+        }
+        .accordion-header.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: #fafafa;
+        }
+        .accordion-content.active {
+            max-height: 1000px;
+        }
+        .accordion-body {
+            padding: 16px;
+            border-top: 1px solid #e0e0e0;
+            line-height: 1.4;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #333;
+        }
+        .footer {
+            margin-top: 5px;
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+        .footer p {
+            margin: 2px 0;
+        }
+        .footer a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        /* AI Diagnosis hierarchical styles */
+        .diagnosis-container {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #1a73e8;
+        }
+        .diagnosis-section {
+            margin-bottom: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .diagnosis-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .diagnosis-section:last-child {
+            margin-bottom: 0;
+        }
+        .diagnosis-section-title {
+            font-size: 0.95em;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1a73e8;
+        }
+        .diagnosis-section.root-cause {
+            border-left: 4px solid #e91e63;
+            background: linear-gradient(135deg, #fff5f8 0%, #ffffff 100%);
+        }
+        .diagnosis-section.root-cause .diagnosis-section-title {
+            color: #e91e63;
+        }
+        .diagnosis-section.evidence {
+            border-left: 4px solid #4caf50;
+            background: linear-gradient(135deg, #f1f8f4 0%, #ffffff 100%);
+        }
+        .diagnosis-section.evidence .diagnosis-section-title {
+            color: #4caf50;
+        }
+        .diagnosis-section.alternatives {
+            border-left: 4px solid #ff9800;
+            background: linear-gradient(135deg, #fff8f0 0%, #ffffff 100%);
+        }
+        .diagnosis-section.alternatives .diagnosis-section-title {
+            color: #ff9800;
+        }
+        .diagnosis-section.next-steps {
+            border-left: 4px solid #2196f3;
+            background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
+        }
+        .diagnosis-section.next-steps .diagnosis-section-title {
+            color: #2196f3;
+        }
+        .diagnosis-content {
+            line-height: 1.5;
+            color: #333;
+            margin-left: 28px;
+        }
+        .diagnosis-content ul {
+            margin: 6px 0;
+            padding-left: 24px;
+        }
+        .diagnosis-content li {
+            margin: 4px 0;
+            padding-left: 8px;
+        }
+        .diagnosis-content p {
+            margin: 6px 0;
+        }
+        .diagnosis-icon {
+            font-size: 1.0em;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI-Powered Log Diagnosis Assistant: Oracle 26ai RAG + Hybrid Search</h1>
+    <p class="subtitle">
+        <strong>Enterprise Intelligent Diagnosis LLM RAG with Dynamic Upload</strong>
+    </p>
+
+    <div class="chat-container">
+        <div id="chat-messages" class="chat-messages">
+            <!-- System welcome message -->
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content">
+                    <p>Hello! I'm a log-based anomaly diagnosis assistant for production systems.</p>
+                    <p>Optimized for distributed systems such as HDFS, but applicable to other production logs!</p>
+                    <p>You can ask me any production questions, such as:</p>
+                    <ul>
+                        <li>What caused blocks to be missing during this time window?</li>
+                        <li>Why did the DataNode fail repeatedly in a short time span?</li>
+                        <li>Are these errors symptoms of a single root cause or multiple issues?</li>
+                    </ul>
+                    <p>Below is an example query.</p>
+                </div>
+            </div>
+
+            <!-- Example user question -->
+            <div class="message user-message">
+                <div class="message-content">
+                    PacketResponder terminating
+                </div>
+            </div>
+
+            <!-- Example AI response (hardcoded) -->
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content">
+                    <div class="diagnosis-container">
+                        <div style="font-size: 1.0em; font-weight: 700; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">
+                            <span>🚀</span><span>AI Diagnosis</span>
+                        </div>
+                        <div class="diagnosis-section root-cause">
+                            <div class="diagnosis-section-title">
+                                <span class="diagnosis-icon">🔍</span>
+                                <span>Root Cause</span>
+                            </div>
+                            <div class="diagnosis-content">
+                                <p>The termination of the PacketResponder processes is likely due to the completion of their tasks, indicating that the DataNode has successfully acknowledged and processed the packet requests for the respective blocks.</p>
+                            </div>
+                        </div>
+                        <div class="diagnosis-section evidence">
+                            <div class="diagnosis-section-title">
+                                <span class="diagnosis-icon">📊</span>
+                                <span>Evidence</span>
+                            </div>
+                            <div class="diagnosis-content">
+                                <p>The logs show multiple instances of the 'PacketResponder' terminating, each associated with a specific block ID. For example, the log entry 'PacketResponder 2 for block blk_5262186175243998904 terminating' suggests that this particular PacketResponder has finished its job.</p>
+                            </div>
+                        </div>
+                        <div class="diagnosis-section alternatives">
+                            <div class="diagnosis-section-title">
+                                <span class="diagnosis-icon">💭</span>
+                                <span>Alternatives</span>
+                            </div>
+                            <div class="diagnosis-content">
+                                <ul>
+                                    <li>Network issues causing premature termination of PacketResponder processes.</li>
+                                    <li>Resource constraints (CPU, memory) leading to forced termination.</li>
+                                    <li>Configuration errors in the DataNode or HDFS settings.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="diagnosis-section next-steps">
+                            <div class="diagnosis-section-title">
+                                <span class="diagnosis-icon">🎯</span>
+                                <span>Next Steps</span>
+                            </div>
+                            <div class="diagnosis-content">
+                                <ul>
+                                    <li>Review additional logs around the termination timestamps for any error messages or warnings.</li>
+                                    <li>Monitor the DataNode's resource usage (CPU, memory, disk I/O) to check for any anomalies.</li>
+                                    <li>Verify the network stability and configuration to ensure there are no connectivity issues.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size: 1.0em; font-weight: 700; margin-top: 24px; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">
+                        <span>📋</span><span>Retrieved Raw Log Evidence (Top 3)</span>
+                    </div>
+                    <div class="accordion">
+                        <div class="accordion-header active" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank 1 (score <span class="accordion-score">0.897</span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content active">
+                            <div class="accordion-body">
+                                081110 145404 34 INFO dfs.DataNode$PacketResponder: <span class="highlight">PacketResponder</span> 1 for block blk_38865049064139660 <span class="highlight">terminating</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank 2 (score <span class="accordion-score">0.784</span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="accordion-body">
+                                081110 145404 34 INFO dfs.DataNode$DataXceiver: Receiving block blk_38865049064139660 src: /10.251.214.32:50010 dest: /10.251.214.32:50010
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank 3 (score <span class="accordion-score">0.757</span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="accordion-body">
+                                081110 145404 34 INFO dfs.DataNode$PacketResponder: Received block blk_38865049064139660 of size 67108864 from /10.251.214.32:50010
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="query" placeholder="Ask me a production question..." autofocus>
+            <button onclick="search()">Send</button>
+        </div>
+    </div>
+
+    <div class="upload-area" id="uploadArea">
+        <p>📤 Supports .log / .txt / .gz (HDFS, Yarn, server logs, etc., max 5000 lines)</p>
+        <input type="file" id="logFile" accept=".log,.txt,.gz">
+        <button class="upload-btn" onclick="document.getElementById('logFile').click()">Select File</button>
+        <div class="upload-status" id="uploadStatus"></div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+            <p id="progressText">Ready to upload...</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Tech stack: OpenAI Embedding + Oracle Autonomous Database 26ai + FastAPI</p>
+        <p>GitHub: <a href="https://github.com/qiaonipan/90-days-ai-backend-reborn" target="_blank">View source code</a></p>
+    </div>
+
+    <script>
+const uploadArea = document.getElementById('uploadArea');
+    const logFileInput = document.getElementById('logFile');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Drag and drop effects
+    ['dragenter', 'dragover'].forEach(event => {
+        uploadArea.addEventListener(event, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('dragover');
+        });
+    });
+    ['dragleave', 'drop'].forEach(event => {
+        uploadArea.addEventListener(event, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+        });
+    });
+    uploadArea.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            logFileInput.files = files;
+            handleUpload();
+        }
+    });
+    logFileInput.addEventListener('change', handleUpload);
+
+    async function handleUpload() {
+        const file = logFileInput.files[0];
+        if (!file) return;
+
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        
+        // Show progress container and reset
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.textContent = 'Parsing file...';
+        progressText.style.color = '#666';
+        uploadStatus.textContent = '';
+        uploadStatus.className = 'upload-status';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+
+            // Read streaming response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Keep incomplete line in buffer
+                
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    
+                    try {
+                        const data = JSON.parse(line);
+                        
+                        if (data.status === 'error') {
+                            progressBar.style.width = '0%';
+                            progressText.textContent = 'Upload failed: ' + (data.message || 'Unknown error');
+                            progressText.style.color = '#e91e63';
+                            uploadStatus.textContent = 'Upload failed: ' + (data.message || 'Unknown error');
+                            uploadStatus.className = 'upload-status error';
+                            
+                            // Show error in chat
+                            chatMessages.innerHTML += `
+                            <div class="message" style="align-self: center;">
+                                <div class="message-content system-message" style="background: #ffebee; color: #c62828;">
+                                    ❌ Upload failed: ${escapeHtml(data.message || 'Unknown error')}
+                                </div>
+                            </div>`;
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                            return;
+                        }
+                        
+                        if (data.status === 'complete') {
+                            progressBar.style.width = '100%';
+                            progressText.textContent = `Upload successful! Loaded ${data.chunks_loaded || 0} log entries (took ${data.processing_time_seconds || 0} seconds)`;
+                            progressText.style.color = '#4caf50';
+                            uploadStatus.textContent = '';
+                            uploadStatus.className = 'upload-status';
+                            
+                            // Add success message in chat area
+                            chatMessages.innerHTML += `
+                            <div class="message" style="align-self: center;">
+                                <div class="message-content system-message">
+                                    ✅ Upload successful! Loaded ${data.chunks_loaded || 0} log entries, ready to query.
+                                </div>
+                            </div>`;
+                            
+                            // Display preliminary summary if available (facts only, no conclusions)
+                            if (data.preliminary_summary) {
+                                const summaryLines = data.preliminary_summary.split('\n').filter(line => line.trim());
+                                let summaryHtml = '<div class="message ai-message">';
+                                summaryHtml += '<div class="ai-avatar">📊</div>';
+                                summaryHtml += '<div class="message-content">';
+                                summaryHtml += '<div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 3px solid #1a73e8;">';
+                                
+                                // Check if first line is title
+                                let isFirstLine = true;
+                                summaryLines.forEach(line => {
+                                    const trimmedLine = line.trim();
+                                    if (isFirstLine && trimmedLine === 'Preliminary Diagnosis Summary') {
+                                        summaryHtml += `<p style="margin: 0 0 8px 0; font-size: 1.0em; font-weight: 700; color: #1a73e8;">${escapeHtml(trimmedLine)}</p>`;
+                                        isFirstLine = false;
+                                    } else if (trimmedLine.startsWith('•')) {
+                                        // Line already has bullet point
+                                        summaryHtml += `<p style="margin: 4px 0; font-size: 0.95em; line-height: 1.4; display: block;">${escapeHtml(trimmedLine)}</p>`;
+                                    } else {
+                                        // Add bullet point if missing
+                                        summaryHtml += `<p style="margin: 4px 0; font-size: 0.95em; line-height: 1.4; display: block;">• ${escapeHtml(trimmedLine)}</p>`;
+                                    }
+                                });
+                                summaryHtml += '</div>';
+                                summaryHtml += '</div>';
+                                summaryHtml += '</div>';
+                                chatMessages.innerHTML += summaryHtml;
+                            }
+                            
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                            
+                            // Reset input
+                            logFileInput.value = '';
+                        } else {
+                            // Update progress
+                            progressBar.style.width = `${data.progress || 0}%`;
+                            
+                            let statusText = 'Processing...';
+                            if (data.status === 'parsing') {
+                                statusText = 'Parsing file...';
+                            } else if (data.status === 'truncating') {
+                                statusText = 'Clearing database...';
+                            } else if (data.status === 'embedding') {
+                                statusText = `Generating embeddings... Processed ${data.processed || 0}/${data.total || '?'} entries`;
+                            } else if (data.status === 'inserting') {
+                                statusText = 'Inserting into database...';
+                            } else if (data.status === 'reloading') {
+                                statusText = 'Reloading index...';
+                            } else if (data.status === 'generating_summary') {
+                                statusText = 'Generating preliminary summary...';
+                            }
+                            
+                            progressText.textContent = statusText;
+                        }
+                    } catch (parseErr) {
+                        console.warn('Failed to parse progress line:', line, parseErr);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Upload error:', err);
+            const errorMsg = err.message || 'Unknown error occurred';
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Upload failed: ' + errorMsg;
+            progressText.style.color = '#e91e63';
+            uploadStatus.textContent = 'Upload failed: ' + errorMsg;
+            uploadStatus.className = 'upload-status error';
+            
+            // Show error in chat area
+            chatMessages.innerHTML += `
+            <div class="message" style="align-self: center;">
+                <div class="message-content system-message" style="background: #ffebee; color: #c62828;">
+                    ❌ Upload failed: ${escapeHtml(errorMsg)}
+                </div>
+            </div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+    async function search() {
+        const query = document.getElementById('query').value.trim();
+        if (!query) return;
+
+        const chatMessages = document.getElementById('chat-messages');
+
+        // Add user message
+        chatMessages.innerHTML += `
+        <div class="message user-message">
+            <div class="message-content">${escapeHtml(query)}</div>
+        </div>`;
+
+        // Add thinking indicator
+        chatMessages.innerHTML += `
+        <div class="message ai-message" id="thinking">
+            <div class="ai-avatar">🚀</div>
+            <div class="message-content">
+                <p><em>Thinking...</em></p>
+            </div>
+        </div>`;
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        document.getElementById('query').value = '';
+
+        try {
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ query: query, top_k: 3 })
+            });
+
+            if (!response.ok) throw new Error('API error: ' + response.status);
+
+            const data = await response.json();
+
+            // Remove thinking indicator
+            const thinkingEl = document.getElementById('thinking');
+            if (thinkingEl) thinkingEl.remove();
+
+            let aiHtml = '';
+            
+            // Display AI diagnosis first with structured formatting
+            if (data.ai_summary) {
+                aiHtml += formatDiagnosis(data.ai_summary);
+            }
+            
+            // Then display logs
+            if (data.retrieved_logs && data.retrieved_logs.length > 0) {
+                aiHtml += `<div style="font-size: 1.0em; font-weight: 700; margin-top: 24px; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">`;
+                aiHtml += `<span>📋</span><span>Retrieved Raw Log Evidence (Top ${data.retrieved_logs.length})</span>`;
+                aiHtml += `</div>`;
+                data.retrieved_logs.forEach((item, index) => {
+                    let highlightedText = escapeHtml(item.text);
+                    const words = query.toLowerCase().split(' ');
+                    words.forEach(word => {
+                        if (word.length > 2) {
+                            const regex = new RegExp(`(${word})`, 'gi');
+                            highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
+                        }
+                    });
+                    let similarity = 'N/A';
+                    // Prioritize hybrid_score (already normalized) over raw distance
+                    if (item.hybrid_score !== undefined && item.hybrid_score !== null) {
+                        similarity = item.hybrid_score.toFixed(3);
+                    } else if (item.distance !== undefined && item.distance !== null) {
+                        // Fallback: convert distance to similarity (for text-embedding-3-small, distance typically 0-2)
+                        // Use exponential decay for better similarity representation
+                        similarity = Math.exp(-item.distance * 1.5).toFixed(3);
+                    }
+                    
+                    const isActive = index === 0 ? 'active' : '';
+                    aiHtml += `
+                    <div class="accordion">
+                        <div class="accordion-header ${isActive}" onclick="toggleAccordion(this)">
+                            <div class="accordion-title">Rank ${item.rank} (similarity <span class="accordion-score">${similarity}</span> <span style="font-size:0.85em;color:#666;"></span>)</div>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content ${isActive}">
+                            <div class="accordion-body">${highlightedText}</div>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            chatMessages.innerHTML += `
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content">${aiHtml || 'No relevant logs found'}</div>
+            </div>`;
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        } catch (err) {
+            const thinkingEl = document.getElementById('thinking');
+            if (thinkingEl) thinkingEl.remove();
+            chatMessages.innerHTML += `
+            <div class="message ai-message">
+                <div class="ai-avatar">🚀</div>
+                <div class="message-content" style="color:red;">
+                    Error: ${escapeHtml(err.message)}<br>Please check network or backend service
+                </div>
+            </div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, match => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[match]);
+    }
+
+    function cleanMarkdown(text) {
+        if (!text) return text;
+        
+        // Remove Markdown bold markers (**text** or __text__)
+        text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+        text = text.replace(/__([^_]+)__/g, '$1');
+        
+        // Remove Markdown italic markers (*text* or _text_) - but be careful not to remove single * in the middle
+        // Only remove if it's clearly a markdown pattern (word boundaries)
+        text = text.replace(/(^|\s)\*([^*\s][^*]*[^*\s])\*(\s|$)/g, '$1$2$3');
+        text = text.replace(/(^|\s)_([^_\s][^_]*[^_\s])_(\s|$)/g, '$1$2$3');
+        
+        // Remove Markdown code markers (`text`)
+        text = text.replace(/`([^`]+)`/g, '$1');
+        
+        // Remove Markdown list markers at start of line (- or *)
+        text = text.replace(/^[\s]*[-*]\s+/gm, '');
+        
+        // Remove Markdown headers (# ## ###)
+        text = text.replace(/^#{1,6}\s+/gm, '');
+        
+        // Clean up any remaining standalone markdown symbols
+        text = text.replace(/\*\*/g, '');
+        text = text.replace(/__/g, '');
+        
+        // Trim each line but preserve line breaks
+        text = text.split('\n').map(line => {
+            line = line.trim();
+            // Remove standalone numbered items (like "2." "3." "4.") that are not part of a list
+            if (/^\d+\.\s*$/.test(line)) {
+                return '';
+            }
+            return line;
+        }).filter(line => line).join('\n');
+        
+        return text;
+    }
+
+    function formatDiagnosis(summary) {
+        if (!summary) return '';
+        
+        // Clean Markdown symbols from the entire summary first
+        summary = cleanMarkdown(summary);
+        
+        // Parse structured content
+        const sections = {
+            'root-cause': { title: 'Root Cause', icon: '🔍', class: 'root-cause', pattern: /-?\s*Root Cause:\s*(.+?)(?=-?\s*(?:Evidence|Alternatives|Next Steps):|$)/is },
+            'evidence': { title: 'Evidence', icon: '📊', class: 'evidence', pattern: /-?\s*Evidence:\s*(.+?)(?=-?\s*(?:Alternatives|Next Steps|Root Cause):|$)/is },
+            'alternatives': { title: 'Alternatives', icon: '💭', class: 'alternatives', pattern: /-?\s*Alternatives:\s*(.+?)(?=-?\s*(?:Next Steps|Root Cause|Evidence):|$)/is },
+            'next-steps': { title: 'Next Steps', icon: '🎯', class: 'next-steps', pattern: /-?\s*Next Steps:\s*(.+?)(?=-?\s*(?:Root Cause|Evidence|Alternatives):|$)/is }
+        };
+        
+        let html = '<div class="diagnosis-container">';
+        html += '<div style="font-size: 1.0em; font-weight: 700; margin-bottom: 16px; color: #1a73e8; display: flex; align-items: center; gap: 8px;">';
+        html += '<span>🚀</span><span>AI Diagnosis</span>';
+        html += '</div>';
+        
+        let foundSections = false;
+        
+        // Match each section
+        for (const [key, section] of Object.entries(sections)) {
+            const match = summary.match(section.pattern);
+            if (match && match[1]) {
+                foundSections = true;
+                let content = match[1].trim();
+                
+                // Clean Markdown symbols from content
+                content = cleanMarkdown(content);
+                
+                // Process list items (lines starting with numbers like "1. ", "2. ")
+                const lines = content.split(/\n/);
+                const processedLines = [];
+                let inList = false;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    // Check if it's a numbered list item (1. 2. 3.) before cleaning
+                    const numberedListMatch = line.match(/^(\d+)\.\s+(.+)$/);
+                    // Check if it's a bullet list item (- or *)
+                    const bulletListMatch = line.match(/^[-*]\s+(.+)$/);
+                    
+                    if (numberedListMatch) {
+                        if (!inList) {
+                            processedLines.push('<ul>');
+                            inList = true;
+                        }
+                        let listContent = cleanMarkdown(numberedListMatch[2]);
+                        processedLines.push('<li>' + escapeHtml(listContent) + '</li>');
+                    } else if (bulletListMatch) {
+                        if (!inList) {
+                            processedLines.push('<ul>');
+                            inList = true;
+                        }
+                        let listContent = cleanMarkdown(bulletListMatch[1]);
+                        processedLines.push('<li>' + escapeHtml(listContent) + '</li>');
+                    } else {
+                        if (inList) {
+                            processedLines.push('</ul>');
+                            inList = false;
+                        }
+                        // Skip standalone numbered items (like "2." "3." "4.") that are not part of a list
+                        if (/^\d+\.\s*$/.test(line)) {
+                            continue;
+                        }
+                        line = cleanMarkdown(line);
+                        processedLines.push('<p>' + escapeHtml(line) + '</p>');
+                    }
+                }
+                
+                if (inList) {
+                    processedLines.push('</ul>');
+                }
+                
+                content = processedLines.join('');
+                
+                html += `<div class="diagnosis-section ${section.class}">`;
+                html += `<div class="diagnosis-section-title">`;
+                html += `<span class="diagnosis-icon">${section.icon}</span>`;
+                html += `<span>${section.title}</span>`;
+                html += `</div>`;
+                html += `<div class="diagnosis-content">${content}</div>`;
+                html += `</div>`;
+            }
+        }
+        
+        // If no structured sections found, display raw content
+        if (!foundSections) {
+            let content = summary.trim();
+            // Clean Markdown symbols
+            content = cleanMarkdown(content);
+            // Split by paragraphs
+            content = content.split(/\n\n+/).map(p => {
+                p = p.trim();
+                if (p) {
+                    // Check if it's a title line (starting with -)
+                    if (/^-\s*[A-Z]/.test(p)) {
+                        p = p.replace(/^-\s*/, '');
+                        p = cleanMarkdown(p);
+                        return '<p style="font-weight: 600; color: #1a73e8; margin-top: 12px;">' + escapeHtml(p) + '</p>';
+                    }
+                    p = cleanMarkdown(p);
+                    return '<p>' + escapeHtml(p) + '</p>';
+                }
+                return '';
+            }).filter(p => p).join('');
+            
+            html += '<div class="diagnosis-section">';
+            html += '<div class="diagnosis-content">' + content + '</div>';
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        return html;
+    }
+
+    function toggleAccordion(header) {
+        const accordion = header.closest('.accordion');
+        const content = accordion.querySelector('.accordion-content');
+        const isActive = header.classList.contains('active');
+        
+        if (isActive) {
+            header.classList.remove('active');
+            content.classList.remove('active');
+        } else {
+            header.classList.add('active');
+            content.classList.add('active');
+        }
+    }
+
+    // Send on Enter key press
+    document.getElementById('query').addEventListener('keypress', e => {
+        if (e.key === 'Enter') search();
+    });
+    </script>
+</body>
+</html>
