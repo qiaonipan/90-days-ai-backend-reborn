@@ -88,3 +88,4 @@ class RerankerService:
             # 回退：如果重排序失败，返回原始文档
             return documents[:top_k]
 
+

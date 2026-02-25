@@ -499,7 +499,7 @@ Day27-30-production-rag-v2/
 ├── evaluation/               # Evaluation framework
 │   ├── evaluate.py         # Main evaluation script
 │   ├── metrics.py          # Metrics calculation
-│   └── metrics_en.py       # Metrics calculation (English version)
+│   └── metrics_en.py       # Metrics calculation
 ├── tests/                    # Test suite
 │   ├── test_api.py         # API tests
 │   ├── test_retrieval.py   # Retrieval tests
@@ -709,7 +709,6 @@ This will:
 - ✅ File upload interface with drag-and-drop
 
 ### Code Quality
-- ✅ All comments in Chinese
 - ✅ Clean code structure
 - ✅ Comprehensive error handling
 - ✅ Type hints and documentation
