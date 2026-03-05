@@ -1,0 +1,2 @@
+# Development and testing (install in addition to parent requirements or base deps)
+pytest>=7.4.0

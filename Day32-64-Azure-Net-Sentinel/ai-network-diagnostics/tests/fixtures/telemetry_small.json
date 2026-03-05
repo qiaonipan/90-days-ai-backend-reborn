@@ -1,0 +1,16 @@
+[
+  {
+    "device": "tor-switch-01",
+    "latency_ms": 120,
+    "packet_loss_pct": 3,
+    "queue_depth_pct": 85,
+    "timestamp": "2026-03-04T12:30:00"
+  },
+  {
+    "device": "tor-switch-01",
+    "latency_ms": 135,
+    "packet_loss_pct": 5,
+    "queue_depth_pct": 92,
+    "timestamp": "2026-03-04T12:31:00"
+  }
+]

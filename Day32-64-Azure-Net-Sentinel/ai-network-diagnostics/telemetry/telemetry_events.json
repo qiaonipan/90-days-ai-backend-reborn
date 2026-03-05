@@ -1,0 +1,44 @@
+[
+  {
+    "device": "tor-switch-23",
+    "latency_ms": 120,
+    "packet_loss_pct": 3,
+    "queue_depth_pct": 85,
+    "timestamp": "2026-03-04T12:30:00"
+  },
+  {
+    "device": "tor-switch-23",
+    "latency_ms": 45,
+    "packet_loss_pct": 0,
+    "queue_depth_pct": 32,
+    "timestamp": "2026-03-04T12:29:00"
+  },
+  {
+    "device": "tor-switch-07",
+    "latency_ms": 95,
+    "packet_loss_pct": 1,
+    "queue_depth_pct": 78,
+    "timestamp": "2026-03-04T12:31:00"
+  },
+  {
+    "device": "tor-switch-23",
+    "latency_ms": 135,
+    "packet_loss_pct": 4,
+    "queue_depth_pct": 88,
+    "timestamp": "2026-03-04T12:31:00"
+  },
+  {
+    "device": "spine-02",
+    "latency_ms": 22,
+    "packet_loss_pct": 0,
+    "queue_depth_pct": 15,
+    "timestamp": "2026-03-04T12:30:00"
+  },
+  {
+    "device": "tor-switch-23",
+    "latency_ms": 142,
+    "packet_loss_pct": 5,
+    "queue_depth_pct": 92,
+    "timestamp": "2026-03-04T12:32:00"
+  }
+]

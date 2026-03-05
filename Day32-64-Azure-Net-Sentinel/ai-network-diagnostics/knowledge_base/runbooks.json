@@ -1,0 +1,42 @@
+[
+  {
+    "symptom": "High latency with packet loss and high queue depth",
+    "possible_cause": "Switch buffer overflow",
+    "mitigation": "Drain traffic and reset switch"
+  },
+  {
+    "symptom": "Elevated latency and packet loss on leaf switch, queue depth above 80%",
+    "possible_cause": "ECMP imbalance causing hot spots",
+    "mitigation": "Rebalance ECMP; verify next-hop weights and drain congested paths"
+  },
+  {
+    "symptom": "High latency and increasing packet loss on spine switch",
+    "possible_cause": "Fiber or optic degradation",
+    "mitigation": "Check optical power and errors; clean or reseat optics; replace if needed"
+  },
+  {
+    "symptom": "Queue depth spike and latency increase with no packet loss",
+    "possible_cause": "Micro-burst from single flow or aggregate",
+    "mitigation": "Identify large flows; apply QoS or rate limit; consider buffer tuning"
+  },
+  {
+    "symptom": "Packet loss and high queue depth, latency within normal range",
+    "possible_cause": "Dropped tail packets under burst; buffer too small",
+    "mitigation": "Increase egress buffer or apply backpressure; verify PFC/ECN if applicable"
+  },
+  {
+    "symptom": "Sustained high latency on multiple TORs in same rack",
+    "possible_cause": "Upstream spine or fabric congestion",
+    "mitigation": "Check spine utilization and errors; drain or re-route traffic; verify fabric health"
+  },
+  {
+    "symptom": "Intermittent packet loss with queue depth fluctuating 70–90%",
+    "possible_cause": "Control-plane or CPU saturation affecting forwarding",
+    "mitigation": "Check CPU and control-plane load; reduce logging or management traffic; restart if needed"
+  },
+  {
+    "symptom": "Latency increasing over time with rising packet loss",
+    "possible_cause": "Network congestion or buffer pressure",
+    "mitigation": "Drain traffic; reset switch; verify ECMP routes; check for micro-bursts"
+  }
+]
